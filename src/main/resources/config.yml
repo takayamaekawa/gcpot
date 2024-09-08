@@ -1,4 +1,10 @@
-# FMC Configuration File
+# Configuration for GCP/Discord 
+GCP:
+    ServiceAccountKeyPath: ""
+    ProjectId: ""
+    Zone: ""
+    InstanceName: ""
+
 MySQL:
     Host: ""
     Database: ""
@@ -6,18 +12,5 @@ MySQL:
     User: ""
     Password: ""
 
-Socket:
-    Client_Port: 
-    Server_Port: 
-
 Discord:
     Webhook_URL: ""
-
-MCVC:
-    Mode: false
-    Host: "localhost"
-    EXE_Path: ""
-
-AutoStop:
-    Mode: false
-    Interval: 3

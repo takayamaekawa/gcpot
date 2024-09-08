@@ -10,6 +10,7 @@ import com.google.inject.AbstractModule;
 import discord.Discord;
 import discord.DiscordEventListener;
 import discord.DiscordInterface;
+import gcp.GCPInstanceManager;
 import mysql.Database;
 import mysql.DatabaseInterface;
 
@@ -35,5 +36,6 @@ public class Module extends AbstractModule {
         bind(DatabaseInterface.class).to(Database.class);
         bind(DiscordInterface.class).to(Discord.class);
         bind(DiscordEventListener.class);
+        bind(GCPInstanceManager.class);
     }
 }

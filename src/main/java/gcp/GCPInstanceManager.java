@@ -1,43 +1,68 @@
 package gcp;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.compute.v1.*;
-import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.api.gax.rpc.ApiException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import static com.google.cloud.compute.v1.Compute.ComputerScopes;
+import java.util.Collections;
+
+import org.slf4j.Logger;
+
+import com.google.api.gax.core.FixedCredentialsProvider;
+import com.google.api.gax.rpc.ApiException;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.compute.v1.InstancesClient;
+import com.google.cloud.compute.v1.InstancesSettings;
+import com.google.cloud.compute.v1.ResetInstanceRequest;
+import com.google.cloud.compute.v1.StartInstanceRequest;
+import com.google.cloud.compute.v1.StopInstanceRequest;
+import com.google.inject.Inject;
+
+import common.Config;
 
 public class GCPInstanceManager {
 
-    // サービスアカウントキーのパス
-    private static final String SERVICE_ACCOUNT_KEY_PATH = "/path/to/your-service-account-key.json";
+    private final Logger logger;
+    private final String serviceAccountKeyPath;
+    private final String projectId;
+    private final String zone;
+    private final String instanceName;
+    //private final Config config;
+    private final boolean check;
+    private GoogleCredentials credentials = null;
 
-    // プロジェクトID、ゾーン、インスタンス名
-    private static final String PROJECT_ID = "your-gcp-project-id";
-    private static final String ZONE = "your-instance-zone";
-    private static final String INSTANCE_NAME = "your-instance-name";
-
-    public static void main(String[] args) throws IOException {
-        // 認証情報の読み込み
-        GoogleCredentials credentials = GoogleCredentials
-                .fromStream(new FileInputStream(SERVICE_ACCOUNT_KEY_PATH))
-                .createScoped(ComputeScopes.all());
-
-        // インスタンスを起動
-        startInstance(PROJECT_ID, ZONE, INSTANCE_NAME, credentials);
-
-        // インスタンスを停止
-        stopInstance(PROJECT_ID, ZONE, INSTANCE_NAME, credentials);
-
-        // インスタンスを再起動
-        resetInstance(PROJECT_ID, ZONE, INSTANCE_NAME, credentials);
+    @Inject
+    public GCPInstanceManager(Logger logger, Config config) {
+        this.logger = logger;
+        //this.config = config;
+        this.serviceAccountKeyPath = config.getString("GCP.ServiceAccountKeyPath", "");
+        this.projectId = config.getString("GCP.ProjectId", "");
+        this.zone = config.getString("GCP.Zone", "");
+        this.instanceName = config.getString("GCP.InstanceName", "");
+        this.check = serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty() &&
+                projectId != null && !projectId.isEmpty() &&
+                zone != null && !zone.isEmpty() &&
+                instanceName != null && !instanceName.isEmpty();
     }
 
-    // インスタンスの起動
-    public static void startInstance(String projectId, String zone, String instanceName, GoogleCredentials credentials) throws IOException {
+    public GoogleCredentials getCredentials() {
+        try {
+            if (credentials != null) {
+                return this.credentials;
+            } else {
+                this.credentials = GoogleCredentials
+                        .fromStream(new FileInputStream(serviceAccountKeyPath))
+                        .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
+                return credentials;
+            }
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    public void startInstance() {
+        if (!check) return;
+
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
-                .setCredentialsProvider(FixedCredentialsProvider.create(credentials)).build())) {
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
             StartInstanceRequest request = StartInstanceRequest.newBuilder()
                     .setProject(projectId)
                     .setZone(zone)
@@ -46,16 +71,18 @@ public class GCPInstanceManager {
             instancesClient.startAsync(request);
             System.out.println("Instance started: " + instanceName);
         } catch (ApiException e) {
-            System.err.println("Failed to start instance: " + e.getStatusCode().getCode());
+            System.err.println();
+            logger.error("Failed to start instance: " + e.getStatusCode().getCode(), e);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
         }
     }
 
-    // インスタンスの停止
-    public static void stopInstance(String projectId, String zone, String instanceName, GoogleCredentials credentials) throws IOException {
+    public void stopInstance() {
+        if (!check) return;
+
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
-                .setCredentialsProvider(FixedCredentialsProvider.create(credentials)).build())) {
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
             StopInstanceRequest request = StopInstanceRequest.newBuilder()
                     .setProject(projectId)
                     .setZone(zone)
@@ -64,16 +91,17 @@ public class GCPInstanceManager {
             instancesClient.stopAsync(request);
             System.out.println("Instance stopped: " + instanceName);
         } catch (ApiException e) {
-            System.err.println("Failed to stop instance: " + e.getStatusCode().getCode());
+            logger.error("Failed to stop instance: " + e.getStatusCode().getCode(), e);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
         }
     }
 
-    // インスタンスの再起動
-    public static void resetInstance(String projectId, String zone, String instanceName, GoogleCredentials credentials) throws IOException {
+    public void resetInstance() {
+        if (!check) return;
+
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
-                .setCredentialsProvider(FixedCredentialsProvider.create(credentials)).build())) {
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
             ResetInstanceRequest request = ResetInstanceRequest.newBuilder()
                     .setProject(projectId)
                     .setZone(zone)
@@ -82,9 +110,9 @@ public class GCPInstanceManager {
             instancesClient.resetAsync(request);
             System.out.println("Instance reset: " + instanceName);
         } catch (ApiException e) {
-            System.err.println("Failed to reset instance: " + e.getStatusCode().getCode());
+            logger.error("Failed to reset instance: " + e.getStatusCode().getCode(), e);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
         }
     }
 }
