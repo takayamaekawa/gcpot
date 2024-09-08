@@ -42,22 +42,22 @@ public class Discord implements DiscordInterface {
                 // Botが完全に起動するのを待つ
 				jda.awaitReady();
 
-                jda.upsertCommand(Commands.slash("tera-start", "Start Terraria Server"))
+                jda.upsertCommand(Commands.slash("gcp-start", "Start GCP Server"))
                     .queue(
-                        success -> System.out.println("Command 'tera-start' registered successfully"),
-                        error -> System.err.println("Failed to register command 'tera-start': " + error.getMessage())
+                        success -> System.out.println("Command 'gcp-start' registered successfully"),
+                        error -> System.err.println("Failed to register command 'gcp-start': " + error.getMessage())
                     );
                 
-                jda.upsertCommand(Commands.slash("tera-stop", "Stop Terraria Server"))
+                jda.upsertCommand(Commands.slash("gcp-stop", "Stop GCP Server"))
                     .queue(
-                        success -> System.out.println("Command 'tera-stop' registered successfully"),
-                        error -> System.err.println("Failed to register command 'tera-stop': " + error.getMessage())
+                        success -> System.out.println("Command 'gcp-stop' registered successfully"),
+                        error -> System.err.println("Failed to register command 'gcp-stop': " + error.getMessage())
                     );
                 
-                jda.upsertCommand(Commands.slash("tera-status", "Check whether Terraria Server is online or not"))
+                jda.upsertCommand(Commands.slash("gcp-status", "Check whether GCP Server is online or not"))
                     .queue(
-                        success -> System.out.println("Command 'tera-status' registered successfully"),
-                        error -> System.err.println("Failed to register command 'tera-status': " + error.getMessage())
+                        success -> System.out.println("Command 'gcp-status' registered successfully"),
+                        error -> System.err.println("Failed to register command 'gcp-status': " + error.getMessage())
                     ); 
 
 				// ステータスメッセージを設定

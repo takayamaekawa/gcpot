@@ -2,6 +2,7 @@ package gcp;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Collections;
 
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.rpc.ApiException;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.compute.v1.Instance;
 import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.compute.v1.InstancesSettings;
 import com.google.cloud.compute.v1.ResetInstanceRequest;
@@ -18,7 +20,7 @@ import com.google.inject.Inject;
 
 import common.Config;
 
-public class GCPInstanceManager {
+public class InstanceManager {
 
     private final Logger logger;
     private final String serviceAccountKeyPath;
@@ -30,7 +32,7 @@ public class GCPInstanceManager {
     private GoogleCredentials credentials = null;
 
     @Inject
-    public GCPInstanceManager(Logger logger, Config config) {
+    public InstanceManager(Logger logger, Config config) {
         this.logger = logger;
         //this.config = config;
         this.serviceAccountKeyPath = config.getString("GCP.ServiceAccountKeyPath", "");
@@ -113,6 +115,53 @@ public class GCPInstanceManager {
             logger.error("Failed to reset instance: " + e.getStatusCode().getCode(), e);
         } catch (IOException e) {
             logger.error("An IOException error occurred: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isInstanceRunning() {
+        if (!check) return false;
+
+        try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
+            Instance instance = instancesClient.get(projectId, zone, instanceName);
+            return "RUNNING".equalsIgnoreCase(instance.getStatus());
+        } catch (ApiException e) {
+            logger.error("Error while checking instance status: " + e.getMessage(), e);
+            return false;
+        } catch (IOException e) {
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean isInstanceFrozen() {
+        if (!check) return true;
+
+        try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
+            Instance instance = instancesClient.get(projectId, zone, instanceName);
+            String instanceIP = instance.getNetworkInterfaces(0).getNetworkIP();
+
+            if (instanceIP != null && !instanceIP.isEmpty()) {
+                return !pingInstance(instanceIP);
+            } else {
+                return true;
+            }
+        } catch (ApiException e) {
+            logger.error("Error while checking instance freeze status: " + e.getMessage(), e);
+            return true;
+        } catch (IOException e) {
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
+            return true;
+        }
+    }
+
+    private boolean pingInstance(String ipAddress) {
+        try {
+            InetAddress inet = InetAddress.getByName(ipAddress);
+            return inet.isReachable(5000);
+        } catch (IOException e) {
+            return false;
         }
     }
 }

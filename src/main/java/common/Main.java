@@ -14,7 +14,7 @@ import com.google.inject.Injector;
 
 import common.Module;
 import discord.Discord;
-import gcp.GCPInstanceManager;
+import gcp.InstanceManager;
 
 public class Main {
     private static Injector injector = null;
@@ -30,7 +30,7 @@ public class Main {
 
         injector = Guice.createInjector(new Module(logger, dataDirectory));
 
-        if (injector.getInstance(GCPInstanceManager.class).getCredentials() == null) {
+        if (injector.getInstance(InstanceManager.class).getCredentials() == null) {
             return;
         }
 

@@ -5,12 +5,14 @@ GCP:
     Zone: ""
     InstanceName: ""
 
+Discord:
+    Token: ""
+    ResponseUrl: ""
+    GCPChannelId: 
+
 MySQL:
     Host: ""
     Database: ""
     Port: 
     User: ""
     Password: ""
-
-Discord:
-    Webhook_URL: ""

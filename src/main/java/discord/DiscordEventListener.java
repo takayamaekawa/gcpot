@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import com.google.inject.Inject;
 
 import common.Config;
-import mysql.Database;
+import gcp.InstanceManager;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -23,18 +23,21 @@ public class DiscordEventListener extends ListenerAdapter {
 	public static String PlayerChatMessageId = null;
 	
 	private final Logger logger;
-	private final String gcpToken, gcpHost, gcpExecFilePath;
-	private final int gcpPort;
+	private final String gcpToken, responseUrl;
 	private final Long gcpChannelId;
+	private final boolean require;
+	private final InstanceManager gcp;
 
 	@Inject
-	public DiscordEventListener (Logger logger, Config config, Database db) {
+	public DiscordEventListener (Logger logger, Config config, InstanceManager gcp) {
 		this.logger = logger;
-		this.gcpToken = config.getString("Terraria.Token", "");
-		this.gcpHost = config.getString("Terraria.Host", "");
-		this.gcpPort = config.getInt("Terraria.Port", 0);
-		this.gcpExecFilePath = config.getString("Terraria.Exec_Path", "");
-		this.gcpChannelId = config.getLong("Terraria.ChannelId", 0);
+		this.gcp = gcp;
+		this.gcpToken = config.getString("Discord.Token", "");
+		this.responseUrl = config.getString("Discord.ResponseUrl", "");
+		this.gcpChannelId = config.getLong("Discord.GCPChannelId", 0);
+		this.require = gcpToken != null && !gcpToken.isEmpty() && 
+				responseUrl != null && !responseUrl.isEmpty() && 
+				gcpChannelId != 0;
 	}
 	
 	@SuppressWarnings("null")
@@ -45,11 +48,6 @@ public class DiscordEventListener extends ListenerAdapter {
 		MessageChannel channel = e.getChannel();
 		String channelId = channel.getId(),
 			guildId = e.getGuild().getId();
-		boolean gcp = !gcpHost.isEmpty() && 
-					!gcpToken.isEmpty() && 
-					gcpPort != 0 && 
-					!gcpExecFilePath.isEmpty() && 
-					gcpChannelId != 0;
 
 		String channelLink = String.format("https://discord.com/channels/%s/%s", guildId, gcpChannelId);
 
@@ -58,7 +56,7 @@ public class DiscordEventListener extends ListenerAdapter {
 				String userMention = user.getAsMention();
 				ReplyCallbackAction messageAction;
 
-				if (!gcp) {
+				if (!require) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
@@ -67,12 +65,19 @@ public class DiscordEventListener extends ListenerAdapter {
 				// 上でgcpChannelIdが0でない(=未定義)なら
 				String gcpChannelId2 = Long.toString(gcpChannelId);
 				if (!channelId.equals(gcpChannelId2)) {
-					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
+					messageAction = e.reply("GCPのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				if (isgcp()) {
+				if (gcp.isInstanceRunning()) {
+					if (gcp.isInstanceFrozen()) {
+						messageAction = e.reply("Terrariaサーバーは既にオンラインです！").setEphemeral(true);
+						messageAction.queue();
+					} else {
+						
+					}
+
 					messageAction = e.reply("Terrariaサーバーは既にオンラインです！").setEphemeral(true);
 					messageAction.queue();
 				} else {
@@ -94,7 +99,7 @@ public class DiscordEventListener extends ListenerAdapter {
 			case "gcp-stop" -> {
 				String userMention = user.getAsMention();
 				ReplyCallbackAction messageAction;
-				if (!gcp) {
+				if (!require) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
@@ -147,7 +152,7 @@ public class DiscordEventListener extends ListenerAdapter {
 			}
 			case "gcp-status" -> {
 				ReplyCallbackAction messageAction;
-				if (!gcp) {
+				if (!require) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
@@ -169,32 +174,6 @@ public class DiscordEventListener extends ListenerAdapter {
 				messageAction.queue();
 			}
 			default -> throw new AssertionError();
-		}
-
-    }
-
-	private boolean isgcp() {
-        try {
-            String urlString = "http://" + gcpHost + ":" + gcpPort + "/status?token=" + gcpToken;
-
-            URI uri = new URI(urlString);
-            URL url = uri.toURL();
-            
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            con.setRequestProperty("Content-Type", "application/json; utf-8");
-
-            int code = con.getResponseCode();
-            switch (code) {
-                case 200 -> {
-                    return true;
-                }
-                default -> {
-                    return false;
-                }
-            }
-        } catch (IOException | URISyntaxException e) {
-            return false;
 		}
     }
 }
