@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
+import common.Config;
+import mysql.Database;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -21,18 +23,18 @@ public class DiscordEventListener extends ListenerAdapter {
 	public static String PlayerChatMessageId = null;
 	
 	private final Logger logger;
-	private final String teraToken, teraHost, teraExecFilePath;
-	private final int teraPort;
-	private final Long teraChannelId;
+	private final String gcpToken, gcpHost, gcpExecFilePath;
+	private final int gcpPort;
+	private final Long gcpChannelId;
 
 	@Inject
 	public DiscordEventListener (Logger logger, Config config, Database db) {
 		this.logger = logger;
-		this.teraToken = config.getString("Terraria.Token", "");
-		this.teraHost = config.getString("Terraria.Host", "");
-		this.teraPort = config.getInt("Terraria.Port", 0);
-		this.teraExecFilePath = config.getString("Terraria.Exec_Path", "");
-		this.teraChannelId = config.getLong("Terraria.ChannelId", 0);
+		this.gcpToken = config.getString("Terraria.Token", "");
+		this.gcpHost = config.getString("Terraria.Host", "");
+		this.gcpPort = config.getInt("Terraria.Port", 0);
+		this.gcpExecFilePath = config.getString("Terraria.Exec_Path", "");
+		this.gcpChannelId = config.getLong("Terraria.ChannelId", 0);
 	}
 	
 	@SuppressWarnings("null")
@@ -43,40 +45,40 @@ public class DiscordEventListener extends ListenerAdapter {
 		MessageChannel channel = e.getChannel();
 		String channelId = channel.getId(),
 			guildId = e.getGuild().getId();
-		boolean tera = !teraHost.isEmpty() && 
-					!teraToken.isEmpty() && 
-					teraPort != 0 && 
-					!teraExecFilePath.isEmpty() && 
-					teraChannelId != 0;
+		boolean gcp = !gcpHost.isEmpty() && 
+					!gcpToken.isEmpty() && 
+					gcpPort != 0 && 
+					!gcpExecFilePath.isEmpty() && 
+					gcpChannelId != 0;
 
-		String channelLink = String.format("https://discord.com/channels/%s/%s", guildId, teraChannelId);
+		String channelLink = String.format("https://discord.com/channels/%s/%s", guildId, gcpChannelId);
 
 		switch (slashCmd) {
-			case "tera-start" -> {
+			case "gcp-start" -> {
 				String userMention = user.getAsMention();
 				ReplyCallbackAction messageAction;
 
-				if (!tera) {
+				if (!gcp) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				// 上でteraChannelIdが0でない(=未定義)なら
-				String teraChannelId2 = Long.toString(teraChannelId);
-				if (!channelId.equals(teraChannelId2)) {
+				// 上でgcpChannelIdが0でない(=未定義)なら
+				String gcpChannelId2 = Long.toString(gcpChannelId);
+				if (!channelId.equals(gcpChannelId2)) {
 					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				if (isTera()) {
+				if (isgcp()) {
 					messageAction = e.reply("Terrariaサーバーは既にオンラインです！").setEphemeral(true);
 					messageAction.queue();
 				} else {
 					try {
-						ProcessBuilder teraprocessBuilder = new ProcessBuilder(teraExecFilePath);
-						teraprocessBuilder.start();
+						ProcessBuilder gcpprocessBuilder = new ProcessBuilder(gcpExecFilePath);
+						gcpprocessBuilder.start();
 						messageAction = e.reply(userMention + " Terrariaサーバーを起動させました。\nまもなく起動します。").setEphemeral(false);
 						messageAction.queue();
 					} catch (IOException e1) {
@@ -89,25 +91,25 @@ public class DiscordEventListener extends ListenerAdapter {
 					}
 				}
 			}
-			case "tera-stop" -> {
+			case "gcp-stop" -> {
 				String userMention = user.getAsMention();
 				ReplyCallbackAction messageAction;
-				if (!tera) {
+				if (!gcp) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				String teraChannelId2 = Long.toString(teraChannelId);
-				if (!channelId.equals(teraChannelId2)) {
+				String gcpChannelId2 = Long.toString(gcpChannelId);
+				if (!channelId.equals(gcpChannelId2)) {
 					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				if (isTera()) {
+				if (isgcp()) {
 					try {
-						String urlString = "http://" + teraHost + ":" + teraPort + "/v2/server/off?token=" + teraToken + "&confirm=true&nosave=false";
+						String urlString = "http://" + gcpHost + ":" + gcpPort + "/v2/server/off?token=" + gcpToken + "&confirm=true&nosave=false";
 
 						URI uri = new URI(urlString);
 						URL url = uri.toURL();
@@ -143,22 +145,22 @@ public class DiscordEventListener extends ListenerAdapter {
 				}
 
 			}
-			case "tera-status" -> {
+			case "gcp-status" -> {
 				ReplyCallbackAction messageAction;
-				if (!tera) {
+				if (!gcp) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 				
-				String teraChannelId2 = Long.toString(teraChannelId);
-				if (!channelId.equals(teraChannelId2)) {
+				String gcpChannelId2 = Long.toString(gcpChannelId);
+				if (!channelId.equals(gcpChannelId2)) {
 					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 				
-				if (isTera()) {
+				if (isgcp()) {
 					messageAction = e.reply("Terrariaサーバーは現在オンラインです。").setEphemeral(true);
 				} else {
 					messageAction = e.reply("Terrariaサーバーは現在オフラインです。").setEphemeral(true);
@@ -171,9 +173,9 @@ public class DiscordEventListener extends ListenerAdapter {
 
     }
 
-	private boolean isTera() {
+	private boolean isgcp() {
         try {
-            String urlString = "http://" + teraHost + ":" + teraPort + "/status?token=" + teraToken;
+            String urlString = "http://" + gcpHost + ":" + gcpPort + "/status?token=" + gcpToken;
 
             URI uri = new URI(urlString);
             URL url = uri.toURL();

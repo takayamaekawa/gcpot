@@ -1,4 +1,4 @@
-package discord;
+package common;
 
 import java.io.FileWriter;
 import java.io.IOException;

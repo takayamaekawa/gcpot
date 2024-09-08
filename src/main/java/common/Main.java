@@ -1,4 +1,4 @@
-package discord;
+package common;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-import discord.Module;
+import common.Module;
+import discord.Discord;
 
 public class Main {
     private static Injector injector = null;
@@ -27,6 +28,7 @@ public class Main {
         }
 
         injector = Guice.createInjector(new Module(logger, dataDirectory));
+        injector.getInstance(Discord.class).loginDiscordBotAsync();
     }
 
     public static Injector getInjector() {

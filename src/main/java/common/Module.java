@@ -1,4 +1,4 @@
-package discord;
+package common;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -6,6 +6,12 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 
 import com.google.inject.AbstractModule;
+
+import discord.Discord;
+import discord.DiscordEventListener;
+import discord.DiscordInterface;
+import mysql.Database;
+import mysql.DatabaseInterface;
 
 public class Module extends AbstractModule {
     private final Logger logger;

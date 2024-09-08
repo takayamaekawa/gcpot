@@ -1,4 +1,5 @@
-package discord;
+package mysql;
+
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,6 +11,8 @@ import java.util.Objects;
 import org.slf4j.Logger;
 
 import com.google.inject.Inject;
+
+import common.Config;
 
 public class Database implements DatabaseInterface {
 
