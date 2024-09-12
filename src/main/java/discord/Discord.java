@@ -49,7 +49,7 @@ public class Discord implements DiscordInterface {
 						Commands.slash("fmc", "FMCCommands")
 							.addSubcommands(
 								new SubcommandData("gcp", "GCP instance control")
-									.addOption(OptionType.STRING, "action", "Action to perform (start, stop, status)", true)
+									.addOption(OptionType.STRING, "gcp_type", "Action to perform (start, stop, status)", true)
 							)
 					).queue();
 
