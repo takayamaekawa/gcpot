@@ -1,13 +1,8 @@
 package discord;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 
-import org.slf4j.Logger;
-
+import com.google.api.gax.rpc.ApiException;
 import com.google.inject.Inject;
 
 import common.Config;
@@ -22,21 +17,17 @@ public class DiscordEventListener extends ListenerAdapter {
 
 	public static String PlayerChatMessageId = null;
 	
-	private final Logger logger;
-	private final String gcpToken, responseUrl;
+	private final String gcpToken;
 	private final Long gcpChannelId;
 	private final boolean require;
 	private final InstanceManager gcp;
 
 	@Inject
-	public DiscordEventListener (Logger logger, Config config, InstanceManager gcp) {
-		this.logger = logger;
+	public DiscordEventListener (Config config, InstanceManager gcp) {
 		this.gcp = gcp;
 		this.gcpToken = config.getString("Discord.Token", "");
-		this.responseUrl = config.getString("Discord.ResponseUrl", "");
 		this.gcpChannelId = config.getLong("Discord.GCPChannelId", 0);
 		this.require = gcpToken != null && !gcpToken.isEmpty() && 
-				responseUrl != null && !responseUrl.isEmpty() && 
 				gcpChannelId != 0;
 	}
 	
@@ -44,25 +35,24 @@ public class DiscordEventListener extends ListenerAdapter {
 	@Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent e) {
 		User user = e.getUser();
-		String slashCmd = e.getName();
+		String userMention = user.getAsMention();
 		MessageChannel channel = e.getChannel();
 		String channelId = channel.getId(),
 			guildId = e.getGuild().getId();
 
 		String channelLink = String.format("https://discord.com/channels/%s/%s", guildId, gcpChannelId);
-
-		switch (slashCmd) {
-			case "gcp-start" -> {
-				String userMention = user.getAsMention();
+		
+		if (e.getName().equals("fmc")) {
+			if (e.getSubcommandName().equals("gcp")) {
+				String action = e.getOption("action").getAsString();
 				ReplyCallbackAction messageAction;
-
+		
 				if (!require) {
 					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 					messageAction.queue();
 					return;
 				}
 
-				// 上でgcpChannelIdが0でない(=未定義)なら
 				String gcpChannelId2 = Long.toString(gcpChannelId);
 				if (!channelId.equals(gcpChannelId2)) {
 					messageAction = e.reply("GCPのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
@@ -70,110 +60,61 @@ public class DiscordEventListener extends ListenerAdapter {
 					return;
 				}
 
-				if (gcp.isInstanceRunning()) {
-					if (gcp.isInstanceFrozen()) {
-						messageAction = e.reply("Terrariaサーバーは既にオンラインです！").setEphemeral(true);
-						messageAction.queue();
-					} else {
-						
-					}
-
-					messageAction = e.reply("Terrariaサーバーは既にオンラインです！").setEphemeral(true);
-					messageAction.queue();
-				} else {
-					try {
-						ProcessBuilder gcpprocessBuilder = new ProcessBuilder(gcpExecFilePath);
-						gcpprocessBuilder.start();
-						messageAction = e.reply(userMention + " Terrariaサーバーを起動させました。\nまもなく起動します。").setEphemeral(false);
-						messageAction.queue();
-					} catch (IOException e1) {
-						messageAction = e.reply(userMention + " 内部エラーが発生しました。\nサーバーが起動できません。").setEphemeral(false);
-						messageAction.queue();
-						logger.error("An IOException error occurred: " + e1.getMessage());
-						for (StackTraceElement element : e1.getStackTrace()) {
-							logger.error(element.toString());
-						}
-					}
-				}
-			}
-			case "gcp-stop" -> {
-				String userMention = user.getAsMention();
-				ReplyCallbackAction messageAction;
-				if (!require) {
-					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
-					messageAction.queue();
-					return;
-				}
-
-				String gcpChannelId2 = Long.toString(gcpChannelId);
-				if (!channelId.equals(gcpChannelId2)) {
-					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
-					messageAction.queue();
-					return;
-				}
-
-				if (isgcp()) {
-					try {
-						String urlString = "http://" + gcpHost + ":" + gcpPort + "/v2/server/off?token=" + gcpToken + "&confirm=true&nosave=false";
-
-						URI uri = new URI(urlString);
-						URL url = uri.toURL();
-						
-						HttpURLConnection con = (HttpURLConnection) url.openConnection();
-						con.setRequestMethod("GET");
-						con.setRequestProperty("Content-Type", "application/json; utf-8");
-
-						int code = con.getResponseCode();
-						switch (code) {
-							case 200 -> {
-								messageAction = e.reply(userMention + " Terrariaサーバーを正常に停止させました。").setEphemeral(false);
+				switch (action.toLowerCase()) {
+					case "start" -> {
+						if (gcp.isInstanceRunning()) {
+							if (gcp.isInstanceFrozen()) {
+								messageAction = e.reply("インスタンスがフリーズしています。\n再起動する場合はコマンドを打ってください。").setEphemeral(true);
+								messageAction.queue();
+							} else {
+								messageAction = e.reply("現在インスタンスはすでに起動しています。").setEphemeral(true);
 								messageAction.queue();
 							}
-							default -> {
-								messageAction = e.reply(userMention + " 内部エラーが発生しました。\nサーバーが正常に停止できなかった可能性があります。").setEphemeral(false);
+						} else {
+							try {
+								gcp.startInstance();
+								messageAction = e.reply(userMention + "インスタンスを起動させました。").setEphemeral(true);
+								messageAction.queue();
+							} catch (ApiException | IOException e1) {
+								messageAction = e.reply(userMention + "インスタンスの起動に失敗しました。").setEphemeral(true);
 								messageAction.queue();
 							}
 						}
-						
-					} catch (IOException | URISyntaxException e2) {
-						logger.error("An IOException | URISyntaxException error occurred: " + e2.getMessage());
-						for (StackTraceElement element : e2.getStackTrace()) {
-							logger.error(element.toString());
-						}
-
-						messageAction = e.reply(userMention + " 内部エラーが発生しました。\nサーバーが正常に停止できなかった可能性があります。").setEphemeral(false);
-						messageAction.queue();
 					}
-				} else {
-					messageAction = e.reply("Terrariaサーバーは現在オフラインです！").setEphemeral(true);
-					messageAction.queue();
+					case "stop" -> {
+						if (gcp.isInstanceRunning()) {
+							if (gcp.isInstanceFrozen()) {
+								messageAction = e.reply(userMention + "インスタンスがフリーズしていました。\nインスタンスを停止しています。").setEphemeral(true);
+								// ここ、できれば、インスタンスが停止するまで、編集メッセージで....stopping now.....など表示して、インスタンスが正常に停止しました。と出したい。
+								messageAction.queue();
+								gcp.stopInstance();
+							} else {
+								messageAction = e.reply(userMention + "インスタンスを停止しています。").setEphemeral(true);
+								messageAction.queue();
+								gcp.stopInstance();
+							}
+						} else {
+							messageAction = e.reply(userMention + "現在インスタンスはすでに停止しています。").setEphemeral(true);
+							messageAction.queue();
+						}
+					}
+					case "status" -> {
+						if (gcp.isInstanceRunning()) {
+							if (gcp.isInstanceFrozen()) {
+								messageAction = e.reply("インスタンスはフリーズしています。").setEphemeral(true);
+								messageAction.queue();
+							} else {
+								messageAction = e.reply("インスタンスは正常に稼働しています。").setEphemeral(true);
+								messageAction.queue();
+							}
+						} else {
+							messageAction = e.reply("インスタンスは停止しています。").setEphemeral(true);
+							messageAction.queue();
+						}
+					}
+					default -> throw new AssertionError();
 				}
-
 			}
-			case "gcp-status" -> {
-				ReplyCallbackAction messageAction;
-				if (!require) {
-					messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
-					messageAction.queue();
-					return;
-				}
-				
-				String gcpChannelId2 = Long.toString(gcpChannelId);
-				if (!channelId.equals(gcpChannelId2)) {
-					messageAction = e.reply("テラリアのコマンドは " + channelLink + " で実行してください。").setEphemeral(true);
-					messageAction.queue();
-					return;
-				}
-				
-				if (isgcp()) {
-					messageAction = e.reply("Terrariaサーバーは現在オンラインです。").setEphemeral(true);
-				} else {
-					messageAction = e.reply("Terrariaサーバーは現在オフラインです。").setEphemeral(true);
-				}
-
-				messageAction.queue();
-			}
-			default -> throw new AssertionError();
 		}
     }
 }

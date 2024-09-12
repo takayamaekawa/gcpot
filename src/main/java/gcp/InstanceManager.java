@@ -47,7 +47,9 @@ public class InstanceManager {
 
     public GoogleCredentials getCredentials() {
         try {
-            if (credentials != null) {
+            if (!check) {
+                return null;
+            } else if (credentials != null) {
                 return this.credentials;
             } else {
                 this.credentials = GoogleCredentials
@@ -60,7 +62,7 @@ public class InstanceManager {
         }
     }
 
-    public void startInstance() {
+    public void startInstance() throws ApiException, IOException {
         if (!check) return;
 
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
@@ -72,11 +74,6 @@ public class InstanceManager {
                     .build();
             instancesClient.startAsync(request);
             System.out.println("Instance started: " + instanceName);
-        } catch (ApiException e) {
-            System.err.println();
-            logger.error("Failed to start instance: " + e.getStatusCode().getCode(), e);
-        } catch (IOException e) {
-            logger.error("An IOException error occurred: " + e.getMessage(), e);
         }
     }
 

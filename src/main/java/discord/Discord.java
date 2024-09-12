@@ -14,7 +14,9 @@ import common.Main;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
 public class Discord implements DiscordInterface {
 
@@ -42,26 +44,17 @@ public class Discord implements DiscordInterface {
                 // Botが完全に起動するのを待つ
 				jda.awaitReady();
 
-                jda.upsertCommand(Commands.slash("gcp-start", "Start GCP Server"))
-                    .queue(
-                        success -> System.out.println("Command 'gcp-start' registered successfully"),
-                        error -> System.err.println("Failed to register command 'gcp-start': " + error.getMessage())
-                    );
-                
-                jda.upsertCommand(Commands.slash("gcp-stop", "Stop GCP Server"))
-                    .queue(
-                        success -> System.out.println("Command 'gcp-stop' registered successfully"),
-                        error -> System.err.println("Failed to register command 'gcp-stop': " + error.getMessage())
-                    );
-                
-                jda.upsertCommand(Commands.slash("gcp-status", "Check whether GCP Server is online or not"))
-                    .queue(
-                        success -> System.out.println("Command 'gcp-status' registered successfully"),
-                        error -> System.err.println("Failed to register command 'gcp-status': " + error.getMessage())
-                    ); 
+                jda.updateCommands()
+					.addCommands(
+						Commands.slash("fmc", "FMCCommands")
+							.addSubcommands(
+								new SubcommandData("gcp", "GCP instance control")
+									.addOption(OptionType.STRING, "action", "Action to perform (start, stop, status)", true)
+							)
+					).queue();
 
 				// ステータスメッセージを設定
-	            jda.getPresence().setActivity(Activity.playing("FMCサーバー"));
+	            jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity", "GCPサーバー")));
 	            
                 // コマンド登録
 
