@@ -111,17 +111,17 @@ public class DiscordEventListener extends ListenerAdapter {
 								try {
 									setFlagForOneMinute();
 									gcp.startInstance();
-									messageAction = e.reply(userMention + "インスタンスを起動させました。").setEphemeral(false);
+									messageAction = e.reply(userMention + " インスタンスを起動させました。").setEphemeral(false);
 									messageAction.queue();
 								} catch (ApiException | IOException e1) {
-									messageAction = e.reply(userMention + "インスタンスの起動に失敗しました。").setEphemeral(false);
+									messageAction = e.reply(userMention + " インスタンスの起動に失敗しました。").setEphemeral(false);
 									messageAction.queue();
 								}
 							}
 						}
 						case "stop" -> {
 							if (!member.getRoles().contains(role)) {
-								messageAction = e.reply("Stopは許可されていません。").setEphemeral(true);
+								messageAction = e.reply("Stopは許可されていません。\nあなたはGCPサーバーがフリーズしているときのみサーバーをリセットできます。").setEphemeral(true);
 								messageAction.queue();
 								return;
 							}
@@ -131,21 +131,21 @@ public class DiscordEventListener extends ListenerAdapter {
 									try {
 										setFlagForOneMinute();
 										gcp.stopInstance();
-										messageAction = e.reply(userMention + "インスタンスがフリーズしていました。\nインスタンスを停止しています。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしていました。\nインスタンスを停止しています。").setEphemeral(false);
 										// ここ、できれば、インスタンスが停止するまで、編集メッセージで....stopping now.....など表示して、インスタンスが正常に停止しました。と出したい。
 										messageAction.queue();
 									} catch (ApiException | IOException e1) {
-										messageAction = e.reply(userMention + "インスタンスがフリーズしている状態で、停止に失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、停止に失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
 								} else {
 									try {
 										gcp.stopInstance();
 										setFlagForOneMinute();
-										messageAction = e.reply(userMention + "インスタンスを停止しています。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスを停止しています。").setEphemeral(false);
 										messageAction.queue();
 									} catch (ApiException | IOException e1) {
-										messageAction = e.reply(userMention + "インスタンスが正常な状態で、停止に失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスが正常な状態で、停止に失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
 								}
@@ -174,10 +174,10 @@ public class DiscordEventListener extends ListenerAdapter {
 									try {
 										setFlagForOneMinute();
 										gcp.resetInstance();
-										messageAction = e.reply(userMention+"インスタンスがフリーズしています。\nインスタンスをリセットしています。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしています。\nインスタンスをリセットしています。").setEphemeral(false);
 										messageAction.queue();
 									} catch (ApiException | IOException e1) {
-										messageAction = e.reply(userMention + "インスタンスがフリーズしている状態で、リセットに失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、リセットに失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
 								} else {
@@ -190,10 +190,10 @@ public class DiscordEventListener extends ListenerAdapter {
 									try {
 										gcp.resetInstance();
 										setFlagForOneMinute();
-										messageAction = e.reply("インスタンスをリセットしています。").setEphemeral(false);
+										messageAction = e.reply(userMention+" インスタンスをリセットしています。").setEphemeral(false);
 										messageAction.queue();
 									} catch (ApiException | IOException e1) {
-										messageAction = e.reply(userMention + "インスタンスが正常な状態で、リセットに失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスが正常な状態で、リセットに失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
 									

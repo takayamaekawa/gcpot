@@ -4,6 +4,7 @@ GCP:
     ProjectId: ""
     Zone: ""
     InstanceName: ""
+    WebHost: ""
 
 Discord:
     Token: ""

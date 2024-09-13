@@ -2,7 +2,10 @@ package gcp;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collections;
 
 import org.slf4j.Logger;
@@ -23,10 +26,7 @@ import common.Config;
 public class InstanceManager {
 
     private final Logger logger;
-    private final String serviceAccountKeyPath;
-    private final String projectId;
-    private final String zone;
-    private final String instanceName;
+    private final String serviceAccountKeyPath, projectId, zone, instanceName, webHost;
     //private final Config config;
     private final boolean check;
     private GoogleCredentials credentials = null;
@@ -39,10 +39,12 @@ public class InstanceManager {
         this.projectId = config.getString("GCP.ProjectId", "");
         this.zone = config.getString("GCP.Zone", "");
         this.instanceName = config.getString("GCP.InstanceName", "");
+        this.webHost = config.getString("GCP.WebHost", "");
         this.check = serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty() &&
                 projectId != null && !projectId.isEmpty() &&
                 zone != null && !zone.isEmpty() &&
-                instanceName != null && !instanceName.isEmpty();
+                instanceName != null && !instanceName.isEmpty() &&
+                webHost != null && !webHost.isEmpty();
     }
 
     public GoogleCredentials getCredentials() {
@@ -132,7 +134,8 @@ public class InstanceManager {
             String instanceIP = instance.getNetworkInterfaces(0).getNetworkIP();
 
             if (instanceIP != null && !instanceIP.isEmpty()) {
-                return !pingInstance(instanceIP);
+                //return !pingInstance(instanceIP);
+                return !isServerResponding();
             } else {
                 return true;
             }
@@ -145,12 +148,29 @@ public class InstanceManager {
         }
     }
 
-    private boolean pingInstance(String ipAddress) {
+    private boolean isServerResponding() {
+        try {
+            // URIを使ってURLを作成
+            URI uri = new URI("https", webHost, "/", null);
+            URL url = uri.toURL();  // URLに変換
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            int responseCode = connection.getResponseCode();
+            return (responseCode == 200);
+        } catch (IOException | IllegalArgumentException | URISyntaxException e) {
+            logger.error("An isServerResponding error occurred: " + e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /*private boolean pingInstance(String ipAddress) {
         try {
             InetAddress inet = InetAddress.getByName(ipAddress);
             return inet.isReachable(5000);
         } catch (IOException e) {
             return false;
         }
-    }
+    }*/
 }

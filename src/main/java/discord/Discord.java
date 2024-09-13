@@ -49,10 +49,10 @@ public class Discord implements DiscordInterface {
 				createFmcCommand.addSubcommands(
 					new SubcommandData("gcp", "GCP commands")
 						.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
-							.addChoice("Start", "start")
-							.addChoice("Stop", "stop")
 							.addChoice("Status", "status")
+							.addChoice("Start", "start")
 							.addChoice("Reset", "reset")
+							.addChoice("Stop", "stop")
 					)
 				).queue();
 
