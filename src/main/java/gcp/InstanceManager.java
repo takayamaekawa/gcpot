@@ -73,11 +73,11 @@ public class InstanceManager {
                     .setInstance(instanceName)
                     .build();
             instancesClient.startAsync(request);
-            System.out.println("Instance started: " + instanceName);
+            logger.info("Instance started: " + instanceName);
         }
     }
 
-    public void stopInstance() {
+    public void stopInstance() throws ApiException, IOException {
         if (!check) return;
 
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
@@ -88,15 +88,11 @@ public class InstanceManager {
                     .setInstance(instanceName)
                     .build();
             instancesClient.stopAsync(request);
-            System.out.println("Instance stopped: " + instanceName);
-        } catch (ApiException e) {
-            logger.error("Failed to stop instance: " + e.getStatusCode().getCode(), e);
-        } catch (IOException e) {
-            logger.error("An IOException error occurred: " + e.getMessage(), e);
+            logger.info("Instance stopped: " + instanceName);
         }
     }
 
-    public void resetInstance() {
+    public void resetInstance() throws ApiException, IOException {
         if (!check) return;
 
         try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
@@ -107,11 +103,7 @@ public class InstanceManager {
                     .setInstance(instanceName)
                     .build();
             instancesClient.resetAsync(request);
-            System.out.println("Instance reset: " + instanceName);
-        } catch (ApiException e) {
-            logger.error("Failed to reset instance: " + e.getStatusCode().getCode(), e);
-        } catch (IOException e) {
-            logger.error("An IOException error occurred: " + e.getMessage(), e);
+            logger.info("Instance reset: " + instanceName);
         }
     }
 

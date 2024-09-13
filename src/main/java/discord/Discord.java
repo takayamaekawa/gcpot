@@ -15,8 +15,9 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import net.dv8tion.jda.api.requests.restaction.CommandCreateAction;
 
 public class Discord implements DiscordInterface {
 
@@ -44,20 +45,19 @@ public class Discord implements DiscordInterface {
                 // Botが完全に起動するのを待つ
 				jda.awaitReady();
 
-                jda.updateCommands()
-					.addCommands(
-						Commands.slash("fmc", "FMCCommands")
-							.addSubcommands(
-								new SubcommandData("gcp", "GCP instance control")
-									.addOption(OptionType.STRING, "gcp_type", "Action to perform (start, stop, status)", true)
-							)
-					).queue();
+				CommandCreateAction createFmcCommand = jda.upsertCommand("fmc", "FMC commands");
+				createFmcCommand.addSubcommands(
+					new SubcommandData("gcp", "GCP commands")
+						.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
+							.addChoice("Start", "start")
+							.addChoice("Stop", "stop")
+							.addChoice("Status", "status")
+							.addChoice("Reset", "reset")
+					)
+				).queue();
 
-				// ステータスメッセージを設定
 	            jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity", "GCPサーバー")));
 	            
-                // コマンド登録
-
 				isDiscord = true;
 				logger.info("Discord-Botがログインしました。");
 			} catch (LoginException | InterruptedException e) {

@@ -10,6 +10,7 @@ Discord:
     GCPChannelId: 
     Presence:
         Activity: ""
+    GCPRoleId: 
 
 MySQL:
     Host: ""
