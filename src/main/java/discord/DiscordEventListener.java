@@ -1,5 +1,8 @@
 package discord;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +18,13 @@ import gcp.InstanceManager;
 import gcp.LoopStatus;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 
 public class DiscordEventListener extends ListenerAdapter {
@@ -33,6 +38,7 @@ public class DiscordEventListener extends ListenerAdapter {
 	private final InstanceManager gcp;
 	private final AtomicBoolean isInterval;
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	private final List<String> messageIds = new ArrayList<>(); 
 
 	@Inject
 	public DiscordEventListener (Logger logger, Config config, InstanceManager gcp) {
@@ -47,33 +53,46 @@ public class DiscordEventListener extends ListenerAdapter {
 		this.isInterval = new AtomicBoolean(false);
 	}
 	
-	public void setFlagForOneMinute() {
+	public void setFlagForOneMinute(String messageId) {
 		isInterval.set(true);
         logger.info("Flag set to true");
+		messageIds.add(messageId);
 
         scheduler.schedule(() -> {
             isInterval.set(false);
             logger.info("Flag set to false");
+			messageIds.clear();
         }, 1, TimeUnit.MINUTES);
     }
 
-	@SuppressWarnings("null")
 	@Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent e) {
 		User user = e.getUser();
 		Member member = e.getMember();
+		Objects.requireNonNull(member);
 		String userMention = user.getAsMention();
 		Guild guild = e.getGuild();
+		String guildId;
+		if (guild != null) {
+			guildId = guild.getId();
+		} else {
+			logger.error("failed to gather info about discord Guild.");
+			return;
+		}
+
 		MessageChannel channel = e.getChannel();
 		String channelId = channel.getId(),
-			guildId = e.getGuild().getId(),
 			channelLink = String.format("https://discord.com/channels/%s/%s", guildId, gcpChannelId);
 		Role role = guild.getRoleById(Long.toString(gcpRoleId));
 		
 		if (e.getName().equals("fmc")) {
-			switch (e.getSubcommandName()) {
+			String args1 = (e.getSubcommandName() != null) ? e.getSubcommandName() : null;
+			Objects.requireNonNull(args1);
+			switch (args1) {
 				case "gcp" -> {
-					String gcpType = e.getOption("action").getAsString();
+					OptionMapping option = e.getOption("action");
+					Objects.requireNonNull(option);
+					String gcpType = option.getAsString();
 					ReplyCallbackAction messageAction;
 			
 					if (!require) {
@@ -90,13 +109,27 @@ public class DiscordEventListener extends ListenerAdapter {
 					}
 					
 					switch (gcpType.toLowerCase()) {
+						case "status" -> {
+							if (LoopStatus.isRunning.get()) {
+								if (LoopStatus.isFreezing.get()) {
+									messageAction = e.reply("インスタンスはフリーズしています。\nリセットしてください！").setEphemeral(false);
+									messageAction.queue();
+								} else {
+									messageAction = e.reply("インスタンスは正常に稼働しています。").setEphemeral(true);
+									messageAction.queue();
+								}
+							} else {
+								messageAction = e.reply("インスタンスは停止しています。").setEphemeral(true);
+								messageAction.queue();
+							}
+						}
 						case "start" -> {
 							if (isInterval.get()) {
 								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
 								messageAction.queue();
 								return;
 							}
-
+							
 							if (!member.getRoles().contains(role)) {
 								messageAction = e.reply("Startは許可されていません。\nあなたはGCPサーバーがフリーズしているときのみサーバーをリセットできます。").setEphemeral(true);
 								messageAction.queue();
@@ -113,18 +146,54 @@ public class DiscordEventListener extends ListenerAdapter {
 								}
 							} else {
 								try {
-									setFlagForOneMinute();
-									gcp.startInstance();
-									messageAction = e.reply(userMention + " インスタンスを起動させました。").setEphemeral(false);
-									messageAction.queue();
+									// インタラクションを先に返す。
+									messageAction = e.reply(userMention + " 現在インスタンスは停止しています。").setEphemeral(false);
+									messageAction.queue(hook -> {
+										hook.retrieveOriginal().queue(message -> {
+											String messageId = message.getId();
+											setFlagForOneMinute(messageId);
+										});
+									});
+
+									// 以下、completefutureで完了時にメッセージIDをもって編集する
+									gcp.startInstance().thenApply(success -> {
+										if (success) {
+											logger.info("start starting");
+											editMessage(messageIds, channel,"\nスタートを実行中です。");
+											return true;
+										} else {
+											logger.error("failed start starting");
+											editMessage(messageIds, channel,"\nスタートの実行に失敗しました。");
+											return false;
+										}
+									})
+									.thenAccept(result -> {
+										if (result) {
+											logger.info("successfully instance start");
+											editMessage(messageIds, channel,"\nスタートが正常に実行されました。");
+										} else {
+											logger.error("failed instance start while executing");
+											editMessage(messageIds, channel,"\nスタートの実行中にエラーが発生しました。");
+										}
+									})
+									.exceptionally(ex -> {
+										logger.error("Start Error: " + ex.getMessage());
+										return null;
+									});
 								} catch (ApiException e1) {
 									logger.error("Discord command `gcp start` error: ", e1.getMessage(), e1);
-									messageAction = e.reply(userMention + " インスタンスの起動に失敗しました。").setEphemeral(false);
+									messageAction = e.reply(userMention + " インスタンスが停止している状態で、スタートに失敗しました。\nGCEのAPIエラー。").setEphemeral(false);
 									messageAction.queue();
 								}
 							}
 						}
 						case "stop" -> {
+							if (isInterval.get()) {
+								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
+								messageAction.queue();
+								return;
+							}
+
 							if (!member.getRoles().contains(role)) {
 								messageAction = e.reply("Stopは許可されていません。\nあなたはGCPサーバーがフリーズしているときのみサーバーをリセットできます。").setEphemeral(true);
 								messageAction.queue();
@@ -134,58 +203,145 @@ public class DiscordEventListener extends ListenerAdapter {
 							if (LoopStatus.isRunning.get()) {
 								if (LoopStatus.isFreezing.get()) {
 									try {
-										setFlagForOneMinute();
-										gcp.stopInstance();
-										messageAction = e.reply(userMention + " インスタンスがフリーズしていました。\nインスタンスを停止しています。").setEphemeral(false);
-										// ここ、できれば、インスタンスが停止するまで、編集メッセージで....stopping now.....など表示して、インスタンスが正常に停止しました。と出したい。
-										messageAction.queue();
+										// インタラクションを先に返す。
+										messageAction = e.reply(userMention + " インスタンスがフリーズしています。").setEphemeral(false);
+										messageAction.queue(hook -> {
+											hook.retrieveOriginal().queue(message -> {
+												String messageId = message.getId();
+												setFlagForOneMinute(messageId);
+											});
+										});
+
+										// 以下、completefutureで完了時にメッセージIDをもって編集する
+										gcp.stopInstance().thenApply(success -> {
+											if (success) {
+												logger.info("stop starting");
+												editMessage(messageIds, channel,"\nストップを実行中です。");
+												return true;
+											} else {
+												logger.error("failed stop starting");
+												editMessage(messageIds, channel,"\nストップの実行に失敗しました。");
+												return false;
+											}
+										})
+										.thenAccept(result -> {
+											if (result) {
+												logger.info("successfully instance stop");
+												editMessage(messageIds, channel,"\nストップが正常に実行されました。");
+											} else {
+												logger.error("failed instance stop while executing");
+												editMessage(messageIds, channel,"\nストップの実行中にエラーが発生しました。");
+											}
+										})
+										.exceptionally(ex -> {
+											logger.error("Stop Error: " + ex.getMessage());
+											return null;
+										});
 									} catch (ApiException e1) {
 										logger.error("Discord command `gcp stop` error: ", e1.getMessage(), e1);
-										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、停止に失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、ストップに失敗しました。\nGCEのAPIエラー。").setEphemeral(false);
 										messageAction.queue();
 									}
 								} else {
+									if (!member.getRoles().contains(role)) {
+										messageAction = e.reply("Stopは許可されていません。\nあなたはGCPサーバーがフリーズしているときのみサーバーをストップできます。").setEphemeral(true);
+										messageAction.queue();
+										return;
+									}
+
 									try {
-										gcp.stopInstance();
-										setFlagForOneMinute();
-										messageAction = e.reply(userMention + " インスタンスを停止しています。").setEphemeral(false);
-										messageAction.queue();
+										// インタラクションを先に返す。
+										messageAction = e.reply(userMention + " インスタンスをストップしています。").setEphemeral(false);
+										messageAction.queue(hook -> {
+											hook.retrieveOriginal().queue(message -> {
+												String messageId = message.getId();
+												setFlagForOneMinute(messageId);
+											});
+										});
+
+										// 以下、completefutureで完了時にメッセージIDをもって編集する
+										gcp.stopInstance().thenApply(success -> {
+											if (success) {
+												logger.info("stop starting");
+												editMessage(messageIds, channel,"\nストップを実行中です。");
+												return true;
+											} else {
+												logger.error("failed stop starting");
+												editMessage(messageIds, channel,"\nストップの実行に失敗しました。");
+												return false;
+											}
+										})
+										.thenAccept(result -> {
+											if (result) {
+												logger.info("successfully instance stop");
+												editMessage(messageIds, channel,"\nストップが正常に実行されました。");
+											} else {
+												logger.error("failed instance stop while executing");
+												editMessage(messageIds, channel,"\nストップの実行中にエラーが発生しました。");
+											}
+										})
+										.exceptionally(ex -> {
+											logger.error("Stop Error: " + ex.getMessage());
+											return null;
+										});
 									} catch (ApiException e1) {
 										logger.error("Discord command `gcp stop` error: ", e1.getMessage(), e1);
-										messageAction = e.reply(userMention + " インスタンスが正常な状態で、停止に失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスが正常な状態で、ストップに失敗しました。\nGCEのAPIエラー。").setEphemeral(false);
 										messageAction.queue();
 									}
 								}
 							} else {
-								messageAction = e.reply("現在インスタンスはすでに停止しています。").setEphemeral(true);
-								messageAction.queue();
-							}
-						}
-						case "status" -> {
-							if (LoopStatus.isRunning.get()) {
-								if (LoopStatus.isFreezing.get()) {
-									messageAction = e.reply("インスタンスはフリーズしています。\nリセットしてください！").setEphemeral(false);
-									messageAction.queue();
-								} else {
-									messageAction = e.reply("インスタンスは正常に稼働しています。").setEphemeral(true);
-									messageAction.queue();
-								}
-							} else {
-								messageAction = e.reply("インスタンスは停止しています。").setEphemeral(true);
+								messageAction = e.reply("インスタンスはすでに停止しています。").setEphemeral(true);
 								messageAction.queue();
 							}
 						}
 						case "reset" -> {
+							if (isInterval.get()) {
+								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
+								messageAction.queue();
+								return;
+							}
+
 							if (LoopStatus.isRunning.get()) {
 								if (LoopStatus.isFreezing.get()) {
 									try {
-										setFlagForOneMinute();
-										gcp.resetInstance();
-										messageAction = e.reply(userMention + " インスタンスがフリーズしています。\nインスタンスをリセットしています。").setEphemeral(false);
-										messageAction.queue();
+										// インタラクションを先に返す。
+										messageAction = e.reply(userMention + " インスタンスがフリーズしています。").setEphemeral(false);
+										messageAction.queue(hook -> {
+											hook.retrieveOriginal().queue(message -> {
+												String messageId = message.getId();
+												setFlagForOneMinute(messageId);
+											});
+										});
+
+										// 以下、completefutureで完了時にメッセージIDをもって編集する
+										gcp.resetInstance().thenApply(success -> {
+											if (success) {
+												logger.info("reset starting");
+												editMessage(messageIds, channel,"\nリセットを実行中です。");
+												return true;
+											} else {
+												logger.error("failed reset starting");
+												editMessage(messageIds, channel,"\nリセットの実行に失敗しました。");
+												return false;
+											}
+										})
+										.thenAccept(result -> {
+											if (result) {
+												logger.info("successfully instance reset");
+												editMessage(messageIds, channel,"\nリセットが正常に実行されました。");
+											} else {
+												logger.error("failed instance reset while executing");
+												editMessage(messageIds, channel,"\nリセットの実行中にエラーが発生しました。");
+											}
+										})
+										.exceptionally(ex -> {
+											logger.error("Reset Error: " + ex.getMessage());
+											return null;
+										});
 									} catch (ApiException e1) {
 										logger.error("Discord command `gcp reset` error: ", e1.getMessage(), e1);
-										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、リセットに失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、リセットに失敗しました。\nGCEのAPIエラー。").setEphemeral(false);
 										messageAction.queue();
 									}
 								} else {
@@ -196,16 +352,45 @@ public class DiscordEventListener extends ListenerAdapter {
 									}
 
 									try {
-										gcp.resetInstance();
-										setFlagForOneMinute();
-										messageAction = e.reply(userMention+" インスタンスをリセットしています。").setEphemeral(false);
-										messageAction.queue();
+										// インタラクションを先に返す。
+										messageAction = e.reply(userMention + " インスタンスをリセットしています。").setEphemeral(false);
+										messageAction.queue(hook -> {
+											hook.retrieveOriginal().queue(message -> {
+												String messageId = message.getId();
+												setFlagForOneMinute(messageId);
+											});
+										});
+
+										// 以下、completefutureで完了時にメッセージIDをもって編集する
+										gcp.resetInstance().thenApply(success -> {
+											if (success) {
+												logger.info("reset starting");
+												editMessage(messageIds, channel,"\nリセットを実行中です。");
+												return true;
+											} else {
+												logger.error("failed reset starting");
+												editMessage(messageIds, channel,"\nリセットの実行に失敗しました。");
+												return false;
+											}
+										})
+										.thenAccept(result -> {
+											if (result) {
+												logger.info("successfully instance reset");
+												editMessage(messageIds, channel,"\nリセットが正常に実行されました。");
+											} else {
+												logger.error("failed instance reset while executing");
+												editMessage(messageIds, channel,"\nリセットの実行中にエラーが発生しました。");
+											}
+										})
+										.exceptionally(ex -> {
+											logger.error("Reset Error: " + ex.getMessage());
+											return null;
+										});
 									} catch (ApiException e1) {
 										logger.error("Discord command `gcp reset` error: ", e1.getMessage(), e1);
-										messageAction = e.reply(userMention + " インスタンスが正常な状態で、リセットに失敗しました。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスが正常な状態で、リセットに失敗しました。\nGCEのAPIエラー。").setEphemeral(false);
 										messageAction.queue();
 									}
-									
 								}
 							} else {
 								messageAction = e.reply("インスタンスはすでに停止しています。").setEphemeral(true);
@@ -218,4 +403,15 @@ public class DiscordEventListener extends ListenerAdapter {
 			}
 		}
     }
+
+	private void editMessage(List<String> allMessageIds, MessageChannel messageChannel, String newContent) {
+		for (String getMessageId : allMessageIds) {
+			if (messageChannel != null) {
+				Message message = messageChannel.retrieveMessageById(getMessageId).complete();
+				String content = message.getContentRaw();
+				content += "\n" + newContent;
+				message.editMessage(content).queue();
+			}
+		}
+	}
 }

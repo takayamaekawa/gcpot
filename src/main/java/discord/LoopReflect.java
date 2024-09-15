@@ -17,6 +17,7 @@ import com.google.inject.Inject;
 
 import common.Config;
 import gcp.InstanceManager;
+import gcp.LoopStatus;
 import mysql.Database;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
@@ -77,85 +78,95 @@ public class LoopReflect {
     }
 
     private void updateStatus() {
-        try {
-            if (Objects.isNull(discord.getJDA())) {
-                logger.error("jdaがnullです。");
+        if (Objects.isNull(discord.getJDA())) {
+            logger.error("jdaがnullです。");
+            return;
+        }
+
+        TextChannel channel = discord.getJDA().getTextChannelById(channelId);
+        EmbedBuilder embed = new EmbedBuilder();
+        if (LoopStatus.isRunning.get()) {
+            if (LoopStatus.isFreezing.get()) {
+                embed.setTitle(":negative_squared_cross_mark: インスタンスがフリーズしています！\n/fmc gcp resetを実行してください。").setColor(Color.YELLOW);
+                if (channel != null) {
+                    Message message = channel.retrieveMessageById(messageId).complete();
+                    message.editMessageEmbeds(embed.build()).queue();
+                }
+
                 return;
             }
+        } else {
+            embed.setTitle(":negative_squared_cross_mark: インスタンスは現在停止しています。").setColor(Color.RED);
+            if (channel != null) {
+                Message message = channel.retrieveMessageById(messageId).complete();
+                message.editMessageEmbeds(embed.build()).queue();
+            }
 
-            TextChannel channel = discord.getJDA().getTextChannelById(channelId);
-            EmbedBuilder embed = new EmbedBuilder();
-            if (gcp.isInstanceRunning()) {
-                if (gcp.isInstanceFrozen()) {
-                    embed.setTitle(":negative_squared_cross_mark: インスタンスがフリーズしています！\n/fmc gcp resetを実行してください。").setColor(Color.YELLOW);
+            return;
+        }
+
+        gcp.getStaticAddress().thenApply(internalIp -> {
+            if (internalIp != null) {
+                return internalIp;
+            } else {
+                return null;
+            }
+        }).thenAccept(result -> {
+            try {
+                Connection conn = db.getConnection(result);
+                if (conn == null) {
+                    throw new SQLException("データベースサーバへの接続に失敗しました");
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM mine_status"); 
+                    ResultSet rs = ps.executeQuery()) {
+                    
+                    boolean maintenance = false;
+                    boolean isOnline = false;
+                    while (rs.next()) {
+                        String name = rs.getString("name");
+                        boolean online = rs.getBoolean("online");
+                        
+                        if ("Maintenance".equals(name) && online) {
+                            maintenance = true;
+                            break;
+                        }
+                        
+                        if (online) {
+                            isOnline = true;
+                            String playerList = rs.getString("player_list");
+                            int currentPlayers = rs.getInt("current_players");
+                            if (playerList == null || playerList.isEmpty()) {
+                                embed.addField(":green_circle: " + name, currentPlayers + "/10: No Player", false);
+                            } else {
+                                embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
+                            }
+                        }
+                    }
+                    
+                    if (maintenance) {
+                        embed.setTitle(":red_circle: 現在サーバーメンテナンス中");
+                        embed.setColor(Color.RED);
+                    }
+                    
+                    if (!isOnline) {
+                        embed.setTitle(":red_circle: すべてのサーバーがオフライン");
+                        embed.setColor(Color.RED);
+                    } else {
+                        embed.setColor(Color.GREEN);
+                    }
+
                     if (channel != null) {
                         Message message = channel.retrieveMessageById(messageId).complete();
                         message.editMessageEmbeds(embed.build()).queue();
                     }
-
-                    return;
                 }
-            } else {
-                embed.setTitle(":negative_squared_cross_mark: インスタンスは現在停止しています。").setColor(Color.RED);
-                if (channel != null) {
-                    Message message = channel.retrieveMessageById(messageId).complete();
-                    message.editMessageEmbeds(embed.build()).queue();
-                }
-
-                return;
+            } catch (SQLException | ErrorResponseException | ClassNotFoundException e) {
+                logger.error("Error occurred while updateStatus method: ", e.getMessage(), e);
             }
-
-            String localIP = gcp.getStaticAddress();
-            Connection conn = db.getConnection(localIP);
-            if (conn == null) {
-                throw new SQLException("データベースサーバへの接続に失敗しました");
-            }
-
-            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM mine_status"); 
-                ResultSet rs = ps.executeQuery()) {
-                
-                boolean maintenance = false;
-                boolean isOnline = false;
-                while (rs.next()) {
-                    String name = rs.getString("name");
-                    boolean online = rs.getBoolean("online");
-                    
-                    if ("Maintenance".equals(name) && online) {
-                        maintenance = true;
-                        break;
-                    }
-                    
-                    if (online) {
-                        isOnline = true;
-                        String playerList = rs.getString("player_list");
-                        int currentPlayers = rs.getInt("current_players");
-                        if (playerList == null || playerList.isEmpty()) {
-                            embed.addField(":green_circle: " + name, currentPlayers + "/10: No Player", false);
-                        } else {
-                            embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
-                        }
-                    }
-                }
-                
-                if (maintenance) {
-                    embed.setTitle(":red_circle: 現在サーバーメンテナンス中");
-                    embed.setColor(Color.RED);
-                }
-                
-                if (!isOnline) {
-                    embed.setTitle(":red_circle: すべてのサーバーがオフライン");
-                    embed.setColor(Color.RED);
-                } else {
-                    embed.setColor(Color.GREEN);
-                }
-
-                if (channel != null) {
-                    Message message = channel.retrieveMessageById(messageId).complete();
-                    message.editMessageEmbeds(embed.build()).queue();
-                }
-            }
-        } catch (SQLException | ErrorResponseException | ClassNotFoundException e) {
-            logger.error("Error occurred while updateStatus method: ", e.getMessage(), e);
-        }
+        }).exceptionally(ex -> {
+            logger.error("LoopReflect error: " + ex.getMessage());
+            return null;
+        });
     }
 }

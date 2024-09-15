@@ -21,7 +21,7 @@ public class LoopStatus {
     private final Logger logger;
     private final InstanceManager gcp;
     private final int period;
-    private CompletableFuture<Void> firstLoopCompleted = new CompletableFuture<>();  // 初回ループ完了を監視
+    private final CompletableFuture<Void> firstLoopCompleted = new CompletableFuture<>();  // 初回ループ完了を監視
 
     @Inject
     public LoopStatus(Logger logger, Config config, InstanceManager gcp) {
@@ -51,15 +51,15 @@ public class LoopStatus {
                     Boolean isFrozing2 = futures.get(1).get();
                     if (isRunning2) {
                         if (isFrozing2) {
-                            isRunning.set(true);
-                            isFreezing.set(true);
+                            LoopStatus.isRunning.set(true);
+                            LoopStatus.isFreezing.set(true);
                         } else {
-                            isRunning.set(true);
-                            isFreezing.set(false);
+                            LoopStatus.isRunning.set(true);
+                            LoopStatus.isFreezing.set(false);
                         }
                     } else {
-                        isRunning.set(false);
-                        isFreezing.set(false);
+                        LoopStatus.isRunning.set(false);
+                        LoopStatus.isFreezing.set(false);
                     }
 
                     // 初回のループが完了したことを通知
@@ -68,6 +68,8 @@ public class LoopStatus {
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     logger.error("Updating GCP server status error:", e.getMessage(), e);
+                    LoopStatus.isRunning.set(false);
+                    LoopStatus.isFreezing.set(false);
                 }
 			});
     }
