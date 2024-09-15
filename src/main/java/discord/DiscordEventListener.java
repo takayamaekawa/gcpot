@@ -32,7 +32,7 @@ public class DiscordEventListener extends ListenerAdapter {
 	public static String PlayerChatMessageId = null;
 	
 	private final String gcpToken;
-	private final Long gcpChannelId, gcpRoleId;
+	private final Long gcpChannelId, gcpRoleId, commandPeriod;
 	private final boolean require;
 	private final Logger logger;
 	private final InstanceManager gcp;
@@ -47,6 +47,7 @@ public class DiscordEventListener extends ListenerAdapter {
 		this.gcpToken = config.getString("Discord.Token", "");
 		this.gcpChannelId = config.getLong("Discord.GCPChannelId", 0);
 		this.gcpRoleId = config.getLong("Discord.GCPRoleId", 0);
+		this.commandPeriod = config.getLong("Discord.Command.Period", 60);
 		this.require = gcpToken != null && !gcpToken.isEmpty() && 
 				gcpChannelId != 0 &&
 				gcpRoleId != 0;
@@ -62,11 +63,11 @@ public class DiscordEventListener extends ListenerAdapter {
             isInterval.set(false);
             logger.info("Flag set to false");
 			messageIds.clear();
-        }, 1, TimeUnit.MINUTES);
+        }, commandPeriod, TimeUnit.SECONDS);
     }
 
 	@Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent e) {
+    public void onSlashCommandInteraction(@SuppressWarnings("null") SlashCommandInteractionEvent e) {
 		User user = e.getUser();
 		Member member = e.getMember();
 		Objects.requireNonNull(member);
@@ -125,7 +126,7 @@ public class DiscordEventListener extends ListenerAdapter {
 						}
 						case "start" -> {
 							if (isInterval.get()) {
-								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
+								messageAction = e.reply("Start/Stop/Resetには" + commandPeriod + "秒以上間隔を空けてください。").setEphemeral(true);
 								messageAction.queue();
 								return;
 							}
@@ -147,7 +148,7 @@ public class DiscordEventListener extends ListenerAdapter {
 							} else {
 								try {
 									// インタラクションを先に返す。
-									messageAction = e.reply(userMention + " 現在インスタンスは停止しています。").setEphemeral(false);
+									messageAction = e.reply(userMention + " インスタンスをスタートします。").setEphemeral(false);
 									messageAction.queue(hook -> {
 										hook.retrieveOriginal().queue(message -> {
 											String messageId = message.getId();
@@ -189,7 +190,7 @@ public class DiscordEventListener extends ListenerAdapter {
 						}
 						case "stop" -> {
 							if (isInterval.get()) {
-								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
+								messageAction = e.reply("Start/Stop/Resetには" + commandPeriod + "秒以上間隔を空けてください。").setEphemeral(true);
 								messageAction.queue();
 								return;
 							}
@@ -204,7 +205,7 @@ public class DiscordEventListener extends ListenerAdapter {
 								if (LoopStatus.isFreezing.get()) {
 									try {
 										// インタラクションを先に返す。
-										messageAction = e.reply(userMention + " インスタンスがフリーズしています。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスがフリーズしています。\nインスタンスをストップしています。").setEphemeral(false);
 										messageAction.queue(hook -> {
 											hook.retrieveOriginal().queue(message -> {
 												String messageId = message.getId();
@@ -251,7 +252,7 @@ public class DiscordEventListener extends ListenerAdapter {
 
 									try {
 										// インタラクションを先に返す。
-										messageAction = e.reply(userMention + " インスタンスをストップしています。").setEphemeral(false);
+										messageAction = e.reply(userMention + " インスタンスをストップします。").setEphemeral(false);
 										messageAction.queue(hook -> {
 											hook.retrieveOriginal().queue(message -> {
 												String messageId = message.getId();
@@ -297,7 +298,7 @@ public class DiscordEventListener extends ListenerAdapter {
 						}
 						case "reset" -> {
 							if (isInterval.get()) {
-								messageAction = e.reply("Start/Stop/Resetには1分以上間隔を空けてください。").setEphemeral(true);
+								messageAction = e.reply("Start/Stop/Resetには" + commandPeriod + "秒以上間隔を空けてください。").setEphemeral(true);
 								messageAction.queue();
 								return;
 							}

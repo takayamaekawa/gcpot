@@ -139,7 +139,11 @@ public class LoopReflect {
                             if (playerList == null || playerList.isEmpty()) {
                                 embed.addField(":green_circle: " + name, currentPlayers + "/10: No Player", false);
                             } else {
-                                embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
+                                if (playerList.equals("") || playerList.equals("None")) {
+                                    embed.addField(":green_circle: " + name, currentPlayers + "/10: No Player", false);
+                                } else {
+                                    embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
+                                }
                             }
                         }
                     }
@@ -162,7 +166,8 @@ public class LoopReflect {
                     }
                 }
             } catch (SQLException | ErrorResponseException | ClassNotFoundException e) {
-                logger.error("Error occurred while updateStatus method: ", e.getMessage(), e);
+                //logger.error("Error occurred while updateStatus method: ", e.getMessage(), e);
+                logger.info("MySQLサーバーに再接続を試みています。");
             }
         }).exceptionally(ex -> {
             logger.error("LoopReflect error: " + ex.getMessage());

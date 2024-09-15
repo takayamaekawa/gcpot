@@ -62,7 +62,7 @@ public class Discord implements DiscordInterface {
 						)
 					).queue();
 
-					jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity", "GCPサーバー")));
+					jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity.Default", "GCPサーバー")));
 					
 					isDiscord = true;
 					logger.info("Discord-Botがログインしました。");

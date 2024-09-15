@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.longrunning.OperationFuture;
-import com.google.api.gax.longrunning.OperationSnapshot;
 import com.google.api.gax.rpc.ApiException;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.compute.v1.Instance;
@@ -96,14 +95,16 @@ public class InstanceManager {
                 // 操作が完了するのを待ち、成功したかどうかを確認する
                 return CompletableFuture.supplyAsync(() -> {
                     try {
-                        // 非同期操作の完了を待つ
-                        OperationSnapshot operationSnapshot = operationFuture.getPollingFuture().get();
-                        
-                        if (operationSnapshot != null && operationSnapshot.getErrorMessage() == null) {
-                            logger.info("Instance start: " + instanceName);
+                        // 非同期操作の完了を待つ (完了するまでブロック)
+                        Operation operation = operationFuture.get();  // 操作が完了するまで待機
+                        com.google.cloud.compute.v1.Error errorStatus = operation.getError();
+                        int errorCounts = errorStatus.getErrorsCount();
+                        // 操作が完了しており、エラーがない場合
+                        if (errorCounts == 0) {
+                            logger.info("Instance start successful: " + instanceName);
                             return true;
                         } else {
-                            logger.error("Start failed: " + (operationSnapshot != null ? operationSnapshot.getErrorMessage() : "unknown error"));
+                            logger.error("Start failed: " + errorStatus.toString());
                             return false;
                         }
                     } catch (InterruptedException | ExecutionException e) {
@@ -141,14 +142,16 @@ public class InstanceManager {
                 // 操作が完了するのを待ち、成功したかどうかを確認する
                 return CompletableFuture.supplyAsync(() -> {
                     try {
-                        // 非同期操作の完了を待つ
-                        OperationSnapshot operationSnapshot = operationFuture.getPollingFuture().get();
-                        
-                        if (operationSnapshot != null && operationSnapshot.getErrorMessage() == null) {
-                            logger.info("Instance stop: " + instanceName);
+                        // 非同期操作の完了を待つ (完了するまでブロック)
+                        Operation operation = operationFuture.get();  // 操作が完了するまで待機
+                        com.google.cloud.compute.v1.Error errorStatus = operation.getError();
+                        int errorCounts = errorStatus.getErrorsCount();
+                        // 操作が完了しており、エラーがない場合
+                        if (errorCounts == 0) {
+                            logger.info("Instance stop successful: " + instanceName);
                             return true;
                         } else {
-                            logger.error("Stop failed: " + (operationSnapshot != null ? operationSnapshot.getErrorMessage() : "unknown error"));
+                            logger.error("Stop failed: " + errorStatus.toString());
                             return false;
                         }
                     } catch (InterruptedException | ExecutionException e) {
@@ -185,18 +188,20 @@ public class InstanceManager {
                 // 操作が完了するのを待ち、成功したかどうかを確認する
                 return CompletableFuture.supplyAsync(() -> {
                     try {
-                        // 非同期操作の完了を待つ
-                        OperationSnapshot operationSnapshot = operationFuture.getPollingFuture().get();
-                        
-                        if (operationSnapshot != null && operationSnapshot.getErrorMessage() == null) {
-                            logger.info("Instance reset: " + instanceName);
+                        // 非同期操作の完了を待つ (完了するまでブロック)
+                        Operation operation = operationFuture.get();  // 操作が完了するまで待機
+                        com.google.cloud.compute.v1.Error errorStatus = operation.getError();
+                        int errorCounts = errorStatus.getErrorsCount();
+                        // 操作が完了しており、エラーがない場合
+                        if (errorCounts == 0) {
+                            logger.info("Instance reset successful: " + instanceName);
                             return true;
                         } else {
-                            logger.error("Reset failed: " + (operationSnapshot != null ? operationSnapshot.getErrorMessage() : "unknown error"));
+                            logger.error("Reset failed: " + errorStatus.toString());
                             return false;
                         }
                     } catch (InterruptedException | ExecutionException e) {
-                        logger.error("Reset error: ", e.getMessage(), e);
+                        logger.error("Reset error: " + e.getMessage(), e);
                         return false;
                     }
                 });
@@ -280,7 +285,8 @@ public class InstanceManager {
             future.complete(!is200);
             return future;
         } catch (IOException | IllegalArgumentException | URISyntaxException e) {
-            logger.error("An isServerResponding error occurred: " + e.getMessage(), e);
+            //logger.error("An isServerResponding error occurred: " + e.getMessage(), e);
+            logger.info("現在WEBサーバーにアクセスできません。");
             future.complete(true);
             return future;
         }

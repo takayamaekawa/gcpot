@@ -11,8 +11,14 @@ GCP:
 Discord:
     Token: ""
     GCPChannelId: 
+    Command:
+        Period: 
     Presence:
-        Activity: ""
+        Activity:
+            Default: ""
+            Running: ""
+            Freezing: ""
+            Stopping: ""
     GCPRoleId: 
     Status:
         Period: 
