@@ -165,6 +165,37 @@ public class InstanceManager {
         }
     }
     
+    public String getStaticAddress() {
+        if (!check) return null;
+
+        try (InstancesClient instancesClient = InstancesClient.create(InstancesSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(getCredentials())).build())) {
+            Instance instance = instancesClient.get(projectId, zone, instanceName);
+
+            // 外部IPを取得
+            String externalIp = instance.getNetworkInterfaces(0).getAccessConfigs(0).getNatIP();
+            if (externalIp != null && !externalIp.isEmpty()) {
+                logger.info("External IP Address: " + externalIp);
+                return externalIp;
+            }
+
+            // 外部IPがない場合は、内部IPを取得
+            String internalIp = instance.getNetworkInterfaces(0).getNetworkIP();
+            if (internalIp != null && !internalIp.isEmpty()) {
+                logger.info("Internal IP Address: " + internalIp);
+                return internalIp;
+            }
+
+            return null;
+        } catch (ApiException e) {
+            logger.error("Error while getting static address: " + e.getMessage(), e);
+            return null;
+        } catch (IOException e) {
+            logger.error("An IOException error occurred: " + e.getMessage(), e);
+            return null;
+        }
+    }
+    
     /*private boolean pingInstance(String ipAddress) {
         try {
             InetAddress inet = InetAddress.getByName(ipAddress);

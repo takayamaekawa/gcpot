@@ -14,6 +14,7 @@ import com.google.inject.Injector;
 
 import common.Module;
 import discord.Discord;
+import discord.LoopReflect;
 import gcp.InstanceManager;
 
 public class Main {
@@ -35,6 +36,8 @@ public class Main {
         }
 
         injector.getInstance(Discord.class).loginDiscordBotAsync();
+        injector.getInstance(LoopReflect.class).sendEmbedMessage();
+        //injector.getInstance(LoopReflect.class).start();
     }
 
     public static Injector getInjector() {

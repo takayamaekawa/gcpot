@@ -29,8 +29,7 @@ public class Database implements DatabaseInterface {
     }
 
     @Override
-	public Connection getConnection() throws SQLException, ClassNotFoundException {
-		String host = config.getString("MySQL.Host", "");
+	public Connection getConnection(String host) throws SQLException, ClassNotFoundException {
 		int port = config.getInt("MySQL.Port", 0);
 		String database = config.getString("MySQL.Database", "");
 		String user = config.getString("MySQL.User", "");
@@ -54,7 +53,7 @@ public class Database implements DatabaseInterface {
             conn = DriverManager.getConnection (
             			"jdbc:mysql://" + config.getString("MySQL.Host") + ":" + 
             			config.getInt("MySQL.Port") + "/" + 
-            			config.getString("MySQL.Database"), 
+            			config.getString("MySQL.Database") + "?autoReconnect=true", 
             			config.getString("MySQL.User"), 
             			config.getString("MySQL.Password")
             		);

@@ -32,7 +32,12 @@ public class Discord implements DiscordInterface {
     	this.logger = logger;
     	this.config = config;
     }
-    
+	
+	@Override
+	public JDA getJDA() {
+		return jda;
+	}
+
     @Override
     public void loginDiscordBotAsync() {
     	if (config.getString("Discord.Token","").isEmpty()) return;

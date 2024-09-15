@@ -12,6 +12,10 @@ Discord:
     Presence:
         Activity: ""
     GCPRoleId: 
+    Status:
+        Period: 
+        ChannelId: 
+        MessageId: 
 
 MySQL:
     Host: ""
