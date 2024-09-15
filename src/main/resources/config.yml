@@ -5,6 +5,8 @@ GCP:
     Zone: ""
     InstanceName: ""
     WebHost: ""
+    Status:
+        Period: 
 
 Discord:
     Token: ""

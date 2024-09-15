@@ -51,11 +51,11 @@ public class Database implements DatabaseInterface {
             
             Class.forName("com.mysql.cj.jdbc.Driver");
             conn = DriverManager.getConnection (
-            			"jdbc:mysql://" + config.getString("MySQL.Host") + ":" + 
-            			config.getInt("MySQL.Port") + "/" + 
-            			config.getString("MySQL.Database") + "?autoReconnect=true", 
-            			config.getString("MySQL.User"), 
-            			config.getString("MySQL.Password")
+            			"jdbc:mysql://" + host + ":" + 
+            			port + "/" + 
+            			database + "?autoReconnect=true", 
+            			user, 
+            			password
             		);
 
             return conn;

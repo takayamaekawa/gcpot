@@ -1,16 +1,18 @@
 package discord;
 
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
 
 import com.google.api.gax.rpc.ApiException;
 import com.google.inject.Inject;
 
 import common.Config;
 import gcp.InstanceManager;
+import gcp.LoopStatus;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -27,12 +29,14 @@ public class DiscordEventListener extends ListenerAdapter {
 	private final String gcpToken;
 	private final Long gcpChannelId, gcpRoleId;
 	private final boolean require;
+	private final Logger logger;
 	private final InstanceManager gcp;
 	private final AtomicBoolean isInterval;
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 	@Inject
-	public DiscordEventListener (Config config, InstanceManager gcp) {
+	public DiscordEventListener (Logger logger, Config config, InstanceManager gcp) {
+		this.logger = logger;
 		this.gcp = gcp;
 		this.gcpToken = config.getString("Discord.Token", "");
 		this.gcpChannelId = config.getLong("Discord.GCPChannelId", 0);
@@ -45,11 +49,11 @@ public class DiscordEventListener extends ListenerAdapter {
 	
 	public void setFlagForOneMinute() {
 		isInterval.set(true);
-        System.out.println("Flag set to true");
+        logger.info("Flag set to true");
 
         scheduler.schedule(() -> {
             isInterval.set(false);
-            System.out.println("Flag set to false");
+            logger.info("Flag set to false");
         }, 1, TimeUnit.MINUTES);
     }
 
@@ -99,8 +103,8 @@ public class DiscordEventListener extends ListenerAdapter {
 								return;
 							}
 
-							if (gcp.isInstanceRunning()) {
-								if (gcp.isInstanceFrozen()) {
+							if (LoopStatus.isRunning.get()) {
+								if (LoopStatus.isFreezing.get()) {
 									messageAction = e.reply("インスタンスがフリーズしています。\n再起動する場合はコマンドを打ってください。").setEphemeral(true);
 									messageAction.queue();
 								} else {
@@ -113,7 +117,8 @@ public class DiscordEventListener extends ListenerAdapter {
 									gcp.startInstance();
 									messageAction = e.reply(userMention + " インスタンスを起動させました。").setEphemeral(false);
 									messageAction.queue();
-								} catch (ApiException | IOException e1) {
+								} catch (ApiException e1) {
+									logger.error("Discord command `gcp start` error: ", e1.getMessage(), e1);
 									messageAction = e.reply(userMention + " インスタンスの起動に失敗しました。").setEphemeral(false);
 									messageAction.queue();
 								}
@@ -126,15 +131,16 @@ public class DiscordEventListener extends ListenerAdapter {
 								return;
 							}
 
-							if (gcp.isInstanceRunning()) {
-								if (gcp.isInstanceFrozen()) {
+							if (LoopStatus.isRunning.get()) {
+								if (LoopStatus.isFreezing.get()) {
 									try {
 										setFlagForOneMinute();
 										gcp.stopInstance();
 										messageAction = e.reply(userMention + " インスタンスがフリーズしていました。\nインスタンスを停止しています。").setEphemeral(false);
 										// ここ、できれば、インスタンスが停止するまで、編集メッセージで....stopping now.....など表示して、インスタンスが正常に停止しました。と出したい。
 										messageAction.queue();
-									} catch (ApiException | IOException e1) {
+									} catch (ApiException e1) {
+										logger.error("Discord command `gcp stop` error: ", e1.getMessage(), e1);
 										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、停止に失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
@@ -144,7 +150,8 @@ public class DiscordEventListener extends ListenerAdapter {
 										setFlagForOneMinute();
 										messageAction = e.reply(userMention + " インスタンスを停止しています。").setEphemeral(false);
 										messageAction.queue();
-									} catch (ApiException | IOException e1) {
+									} catch (ApiException e1) {
+										logger.error("Discord command `gcp stop` error: ", e1.getMessage(), e1);
 										messageAction = e.reply(userMention + " インスタンスが正常な状態で、停止に失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
@@ -155,8 +162,8 @@ public class DiscordEventListener extends ListenerAdapter {
 							}
 						}
 						case "status" -> {
-							if (gcp.isInstanceRunning()) {
-								if (gcp.isInstanceFrozen()) {
+							if (LoopStatus.isRunning.get()) {
+								if (LoopStatus.isFreezing.get()) {
 									messageAction = e.reply("インスタンスはフリーズしています。\nリセットしてください！").setEphemeral(false);
 									messageAction.queue();
 								} else {
@@ -169,14 +176,15 @@ public class DiscordEventListener extends ListenerAdapter {
 							}
 						}
 						case "reset" -> {
-							if (gcp.isInstanceRunning()) {
-								if (gcp.isInstanceFrozen()) {
+							if (LoopStatus.isRunning.get()) {
+								if (LoopStatus.isFreezing.get()) {
 									try {
 										setFlagForOneMinute();
 										gcp.resetInstance();
 										messageAction = e.reply(userMention + " インスタンスがフリーズしています。\nインスタンスをリセットしています。").setEphemeral(false);
 										messageAction.queue();
-									} catch (ApiException | IOException e1) {
+									} catch (ApiException e1) {
+										logger.error("Discord command `gcp reset` error: ", e1.getMessage(), e1);
 										messageAction = e.reply(userMention + " インスタンスがフリーズしている状態で、リセットに失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}
@@ -192,7 +200,8 @@ public class DiscordEventListener extends ListenerAdapter {
 										setFlagForOneMinute();
 										messageAction = e.reply(userMention+" インスタンスをリセットしています。").setEphemeral(false);
 										messageAction.queue();
-									} catch (ApiException | IOException e1) {
+									} catch (ApiException e1) {
+										logger.error("Discord command `gcp reset` error: ", e1.getMessage(), e1);
 										messageAction = e.reply(userMention + " インスタンスが正常な状態で、リセットに失敗しました。").setEphemeral(false);
 										messageAction.queue();
 									}

@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
 
 public interface DiscordInterface {
-	public JDA getJDA();
-	void loginDiscordBotAsync();
+	JDA getJDA();
+	CompletableFuture<Void> loginDiscordBotAsync();
 	CompletableFuture<Void> logoutDiscordBot();
 }

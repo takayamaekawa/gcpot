@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +17,12 @@ import common.Module;
 import discord.Discord;
 import discord.LoopReflect;
 import gcp.InstanceManager;
+import gcp.LoopStatus;
 
 public class Main {
     private static Injector injector = null;
     public static void main(String[] args) throws IOException {
-        Logger logger = LoggerFactory.getLogger("web-server");
+        Logger logger = LoggerFactory.getLogger("");
         Path dataDirectory;
         try {
             dataDirectory = getJarPath();
@@ -35,9 +37,18 @@ public class Main {
             return;
         }
 
-        injector.getInstance(Discord.class).loginDiscordBotAsync();
-        injector.getInstance(LoopReflect.class).sendEmbedMessage();
-        //injector.getInstance(LoopReflect.class).start();
+        LoopStatus loopStatus = injector.getInstance(LoopStatus.class);
+        loopStatus.getFirstLoopCompletionFuture().thenRun(() -> {
+            logger.info("最初のループが完了しました。次の処理を実行します。");
+            CompletableFuture<Void> botLogin = injector.getInstance(Discord.class).loginDiscordBotAsync();
+            CompletableFuture<Void> allTasks = CompletableFuture.allOf(botLogin);
+            allTasks.thenRun(() -> {
+                //injector.getInstance(LoopReflect.class).sendEmbedMessage();
+                injector.getInstance(LoopReflect.class).start();
+            });
+        });
+
+        loopStatus.start();
     }
 
     public static Injector getInjector() {

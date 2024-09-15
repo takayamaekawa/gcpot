@@ -39,42 +39,44 @@ public class Discord implements DiscordInterface {
 	}
 
     @Override
-    public void loginDiscordBotAsync() {
-    	if (config.getString("Discord.Token","").isEmpty()) return;
-    	Thread backgroundTask = new Thread(() -> {
-			try {
-				jda = JDABuilder.createDefault(config.getString("Discord.Token"))
-						.addEventListeners(Main.getInjector().getInstance(DiscordEventListener.class))
-						.build();
+    public CompletableFuture<Void> loginDiscordBotAsync() {
+		return CompletableFuture.runAsync(() -> {
+			if (config.getString("Discord.Token","").isEmpty()) return;
+			//Thread backgroundTask = new Thread(() -> {
+				try {
+					jda = JDABuilder.createDefault(config.getString("Discord.Token"))
+							.addEventListeners(Main.getInjector().getInstance(DiscordEventListener.class))
+							.build();
 
-                // Botが完全に起動するのを待つ
-				jda.awaitReady();
+					// Botが完全に起動するのを待つ
+					jda.awaitReady();
 
-				CommandCreateAction createFmcCommand = jda.upsertCommand("fmc", "FMC commands");
-				createFmcCommand.addSubcommands(
-					new SubcommandData("gcp", "GCP commands")
-						.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
-							.addChoice("Status", "status")
-							.addChoice("Start", "start")
-							.addChoice("Reset", "reset")
-							.addChoice("Stop", "stop")
-					)
-				).queue();
+					CommandCreateAction createFmcCommand = jda.upsertCommand("fmc", "FMC commands");
+					createFmcCommand.addSubcommands(
+						new SubcommandData("gcp", "GCP commands")
+							.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
+								.addChoice("Status", "status")
+								.addChoice("Start", "start")
+								.addChoice("Reset", "reset")
+								.addChoice("Stop", "stop")
+						)
+					).queue();
 
-	            jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity", "GCPサーバー")));
-	            
-				isDiscord = true;
-				logger.info("Discord-Botがログインしました。");
-			} catch (LoginException | InterruptedException e) {
-				// スタックトレースをログに出力
-	            logger.error("An discord-bot-login error occurred: " + e.getMessage());
-	            for (StackTraceElement element : e.getStackTrace()) {
-	                logger.error(element.toString());
-	            }
-			}
-    	});
+					jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity", "GCPサーバー")));
+					
+					isDiscord = true;
+					logger.info("Discord-Botがログインしました。");
+				} catch (LoginException | InterruptedException e) {
+					// スタックトレースをログに出力
+					logger.error("An discord-bot-login error occurred: " + e.getMessage());
+					for (StackTraceElement element : e.getStackTrace()) {
+						logger.error(element.toString());
+					}
+				}
+			//});
 
-        backgroundTask.start();
+			//backgroundTask.start();
+		});
     }
     
     @Override

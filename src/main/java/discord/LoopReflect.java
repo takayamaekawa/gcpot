@@ -28,15 +28,17 @@ public class LoopReflect {
     private final Logger logger;
     private final Database db;
     private final InstanceManager gcp;
+    private final Discord discord;
     private final int period;
     private final Long channelId, messageId;
     private final boolean require;
 
     @Inject
-    public LoopReflect(Logger logger, Config config ,Database db, InstanceManager gcp) throws LoginException {
+    public LoopReflect(Logger logger, Config config ,Database db, InstanceManager gcp, Discord discord) throws LoginException {
         this.logger = logger;
         this.db = db;
         this.gcp = gcp;
+        this.discord = discord;
         this.period = config.getInt("Discord.Status.Period", 20);
         this.channelId = config.getLong("Discord.Status.ChannelId", 0);
         this.messageId = config.getLong("Discord.Status.MessageId", 0);
@@ -49,7 +51,7 @@ public class LoopReflect {
             return;
         }
 
-        if (Objects.isNull(Discord.jda)) {
+        if (Objects.isNull(discord.getJDA())) {
             logger.error("jdaがnullです。");
             return;
         }
@@ -64,7 +66,7 @@ public class LoopReflect {
     }
 
     public void sendEmbedMessage() {
-        TextChannel channel = Discord.jda.getTextChannelById(channelId);
+        TextChannel channel = discord.getJDA().getTextChannelById(channelId);
         EmbedBuilder embed = new EmbedBuilder().setTitle("This message is going to be edited").setColor(Color.GREEN);
         if (channel != null) {
             channel.sendMessageEmbeds(embed.build()).queue(
@@ -76,17 +78,16 @@ public class LoopReflect {
 
     private void updateStatus() {
         try {
-            if (Objects.isNull(Discord.jda)) {
+            if (Objects.isNull(discord.getJDA())) {
                 logger.error("jdaがnullです。");
                 return;
             }
 
-            TextChannel channel = Discord.jda.getTextChannelById(channelId);
-            EmbedBuilder embed;
+            TextChannel channel = discord.getJDA().getTextChannelById(channelId);
+            EmbedBuilder embed = new EmbedBuilder();
             if (gcp.isInstanceRunning()) {
                 if (gcp.isInstanceFrozen()) {
-                    embed = new EmbedBuilder().setTitle(":negative_squared_cross_mark: Server freezes now!").setColor(Color.RED);
-                    embed.addField("", "", false);
+                    embed.setTitle(":negative_squared_cross_mark: インスタンスがフリーズしています！\n/fmc gcp resetを実行してください。").setColor(Color.YELLOW);
                     if (channel != null) {
                         Message message = channel.retrieveMessageById(messageId).complete();
                         message.editMessageEmbeds(embed.build()).queue();
@@ -95,8 +96,7 @@ public class LoopReflect {
                     return;
                 }
             } else {
-                embed = new EmbedBuilder().setTitle(":negative_squared_cross_mark: v1 Server is Stopped!").setColor(Color.GREEN);
-                embed.addField("", "", false);
+                embed.setTitle(":negative_squared_cross_mark: インスタンスは現在停止しています。").setColor(Color.RED);
                 if (channel != null) {
                     Message message = channel.retrieveMessageById(messageId).complete();
                     message.editMessageEmbeds(embed.build()).queue();
@@ -104,8 +104,6 @@ public class LoopReflect {
 
                 return;
             }
-
-            embed = new EmbedBuilder().setTitle("Minecraft Servers").setColor(Color.GREEN);
 
             String localIP = gcp.getStaticAddress();
             Connection conn = db.getConnection(localIP);
@@ -117,7 +115,7 @@ public class LoopReflect {
                 ResultSet rs = ps.executeQuery()) {
                 
                 boolean maintenance = false;
-                
+                boolean isOnline = false;
                 while (rs.next()) {
                     String name = rs.getString("name");
                     boolean online = rs.getBoolean("online");
@@ -128,21 +126,33 @@ public class LoopReflect {
                     }
                     
                     if (online) {
+                        isOnline = true;
                         String playerList = rs.getString("player_list");
                         int currentPlayers = rs.getInt("current_players");
-                        embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
+                        if (playerList == null || playerList.isEmpty()) {
+                            embed.addField(":green_circle: " + name, currentPlayers + "/10: No Player", false);
+                        } else {
+                            embed.addField(":green_circle: " + name, currentPlayers + "/10: " + playerList, false);
+                        }
                     }
                 }
                 
                 if (maintenance) {
-                    embed.addField(":red_circle: 現在サーバーメンテナンス中", "", false);
+                    embed.setTitle(":red_circle: 現在サーバーメンテナンス中");
+                    embed.setColor(Color.RED);
                 }
                 
+                if (!isOnline) {
+                    embed.setTitle(":red_circle: すべてのサーバーがオフライン");
+                    embed.setColor(Color.RED);
+                } else {
+                    embed.setColor(Color.GREEN);
+                }
+
                 if (channel != null) {
                     Message message = channel.retrieveMessageById(messageId).complete();
                     message.editMessageEmbeds(embed.build()).queue();
                 }
-                
             }
         } catch (SQLException | ErrorResponseException | ClassNotFoundException e) {
             logger.error("Error occurred while updateStatus method: ", e.getMessage(), e);
