@@ -127,7 +127,7 @@ public class LoopReflect {
                         String name = rs.getString("name");
                         boolean online = rs.getBoolean("online");
                         
-                        if ("Maintenance".equals(name) && online) {
+                        if (name.equals("Maintenance") && online) {
                             maintenance = true;
                             break;
                         }
@@ -151,14 +151,13 @@ public class LoopReflect {
                     if (maintenance) {
                         embed.setTitle(":red_circle: 現在サーバーメンテナンス中");
                         embed.setColor(Color.RED);
-                    }
-                    
-                    if (!isOnline) {
+                    } else if (!isOnline) {
                         embed.setTitle(":red_circle: すべてのサーバーがオフライン");
                         embed.setColor(Color.RED);
                     } else {
                         embed.setColor(Color.GREEN);
                     }
+                    
 
                     if (channel != null) {
                         Message message = channel.retrieveMessageById(messageId).complete();
