@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-import common.Module;
 import discord.Discord;
 import discord.LoopReflect;
 import gcp.InstanceManager;
@@ -31,7 +30,7 @@ public class Main {
             return;
         }
 
-        injector = Guice.createInjector(new Module(logger, dataDirectory));
+        injector = Guice.createInjector(new common.Module(logger, dataDirectory));
 
         if (injector.getInstance(InstanceManager.class).getCredentials() == null) {
             return;

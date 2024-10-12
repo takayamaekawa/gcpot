@@ -118,7 +118,7 @@ public class LoopReflect {
                     throw new SQLException("データベースサーバへの接続に失敗しました");
                 }
 
-                try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM mine_status"); 
+                try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM status"); 
                     ResultSet rs = ps.executeQuery()) {
                     
                     boolean maintenance = false;
