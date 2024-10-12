@@ -127,7 +127,7 @@ public class LoopReflect {
                         String name = rs.getString("name");
                         boolean online = rs.getBoolean("online");
                         
-                        if (name.equals("Maintenance") && online) {
+                        if (name.equals("maintenance") && online) {
                             maintenance = true;
                             break;
                         }
