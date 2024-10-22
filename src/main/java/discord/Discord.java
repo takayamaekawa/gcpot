@@ -51,18 +51,21 @@ public class Discord implements DiscordInterface {
 					// Botが完全に起動するのを待つ
 					jda.awaitReady();
 
-					CommandCreateAction createFmcCommand = jda.upsertCommand("fmc", "FMC commands");
-					createFmcCommand.addSubcommands(
-						new SubcommandData("gcp", "GCP commands")
-							.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
-								.addChoice("Status", "status")
-								.addChoice("Start", "start")
-								.addChoice("Reset", "reset")
-								.addChoice("Stop", "stop")
-						)
-					).queue();
-
-					jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity.Default", "GCPサーバー")));
+					if (config.getBoolean("GCP.Mode", false)) {
+						CommandCreateAction createFmcCommand = jda.upsertCommand("fmc", "FMC commands");
+						createFmcCommand.addSubcommands(
+							new SubcommandData("gcp", "GCP commands")
+								.addOptions(new OptionData(OptionType.STRING, "action", "Choose an action")
+									.addChoice("Status", "status")
+									.addChoice("Start", "start")
+									.addChoice("Reset", "reset")
+									.addChoice("Stop", "stop")
+							)
+						).queue();
+						jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity.Default", "GCPサーバー")));
+					} else {
+						jda.getPresence().setActivity(Activity.playing(config.getString("Discord.Presence.Activity.Default", "MineCraft")));
+					}
 					
 					isDiscord = true;
 					logger.info("Discord-Botがログインしました。");

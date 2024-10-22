@@ -11,8 +11,6 @@ import discord.Discord;
 import discord.DiscordEventListener;
 import discord.DiscordInterface;
 import discord.LoopReflect;
-import gcp.InstanceManager;
-import gcp.LoopStatus;
 import mysql.Database;
 import mysql.DatabaseInterface;
 
@@ -38,8 +36,10 @@ public class Module extends AbstractModule {
         bind(DatabaseInterface.class).to(Database.class);
         bind(DiscordInterface.class).to(Discord.class);
         bind(DiscordEventListener.class);
-        bind(InstanceManager.class);
         bind(LoopReflect.class);
-        bind(LoopStatus.class);
+        bind(gcp.InstanceManager.class);
+        bind(gcp.LoopStatus.class);
+        bind(nongcp.InstanceManager.class);
+        bind(nongcp.LoopStatus.class);
     }
 }

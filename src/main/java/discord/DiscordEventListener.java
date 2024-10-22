@@ -33,7 +33,7 @@ public class DiscordEventListener extends ListenerAdapter {
 	
 	private final String gcpToken;
 	private final Long gcpChannelId, gcpRoleId, commandPeriod;
-	private final boolean require;
+	private final boolean require, gcpMode;
 	private final Logger logger;
 	private final InstanceManager gcp;
 	private final AtomicBoolean isInterval;
@@ -51,6 +51,7 @@ public class DiscordEventListener extends ListenerAdapter {
 		this.require = gcpToken != null && !gcpToken.isEmpty() && 
 				gcpChannelId != 0 &&
 				gcpRoleId != 0;
+		this.gcpMode = config.getBoolean("GCP.Mode", false);
 		this.isInterval = new AtomicBoolean(false);
 	}
 	
@@ -95,7 +96,13 @@ public class DiscordEventListener extends ListenerAdapter {
 					Objects.requireNonNull(option);
 					String gcpType = option.getAsString();
 					ReplyCallbackAction messageAction;
-			
+					
+					if (!gcpMode) {
+						messageAction = e.reply("GCPモードが有効化されていません。").setEphemeral(true);
+						messageAction.queue();
+						return;
+					}
+					
 					if (!require) {
 						messageAction = e.reply("コンフィグの設定が不十分なため、コマンドを実行できません。").setEphemeral(true);
 						messageAction.queue();

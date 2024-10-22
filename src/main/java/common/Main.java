@@ -36,18 +36,28 @@ public class Main {
             return;
         }
 
-        LoopStatus loopStatus = injector.getInstance(LoopStatus.class);
-        loopStatus.getFirstLoopCompletionFuture().thenRun(() -> {
-            logger.info("最初のループが完了しました。次の処理を実行します。");
+        Config config = injector.getInstance(Config.class);
+        if (config.getBoolean("GCP.Mode")) {
+            LoopStatus loopStatus = injector.getInstance(LoopStatus.class);
+            loopStatus.getFirstLoopCompletionFuture().thenRun(() -> {
+                logger.info("最初のループが完了しました。次の処理を実行します。");
+                CompletableFuture<Void> botLogin = injector.getInstance(Discord.class).loginDiscordBotAsync();
+                CompletableFuture<Void> allTasks = CompletableFuture.allOf(botLogin);
+                allTasks.thenRun(() -> {
+                    //injector.getInstance(LoopReflect.class).sendEmbedMessage();
+                    injector.getInstance(LoopReflect.class).start();
+                });
+            });
+
+            loopStatus.start();
+        } else {
             CompletableFuture<Void> botLogin = injector.getInstance(Discord.class).loginDiscordBotAsync();
             CompletableFuture<Void> allTasks = CompletableFuture.allOf(botLogin);
             allTasks.thenRun(() -> {
                 //injector.getInstance(LoopReflect.class).sendEmbedMessage();
                 injector.getInstance(LoopReflect.class).start();
             });
-        });
-
-        loopStatus.start();
+        }
     }
 
     public static Injector getInjector() {

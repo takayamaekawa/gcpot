@@ -1,10 +1,19 @@
 # Configuration for GCP/Discord
+Common:
+    WebHost: ""
+
 GCP:
+    Mode: false
     ServiceAccountKeyPath: ""
     ProjectId: ""
     Zone: ""
     InstanceName: ""
     WebHost: ""
+    Status:
+        Period: 
+
+NonGCP: 
+    LocalIP: "localhost"
     Status:
         Period: 
 
