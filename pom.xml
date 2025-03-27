@@ -1,126 +1,126 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>FMC-Plugin</groupId>
-	<artifactId>FMC</artifactId>
-	<version>1.0.0</version>
-	<name>fmc-plugin</name>
-	<properties>
-		<!--<java.version>1.8</java.version>POPPOOO!!!-->
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>22</maven.compiler.source>
-		<maven.compiler.target>22</maven.compiler.target>
-		<velocity.version>3.3.0</velocity.version>
-	</properties>
-	<dependencies>
-		<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.5.8</version>
-		</dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>2.1.0-alpha1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.yaml/snakeyaml -->
-		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
-			<version>2.0</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.inject/guice -->
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>7.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.30</version>
-			<scope>compile</scope>
-		</dependency>
-			<!-- https://mvnrepository.com/artifact/org.json/json -->
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20180813</version>
-		</dependency>
-		<dependency>
-			<groupId>net.dv8tion</groupId>
-			<artifactId>JDA</artifactId>
-			<version>5.0.0-alpha.5</version>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<version>4.9.3</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.cloud/google-cloud-compute -->
-		<dependency>
-			<groupId>com.google.cloud</groupId>
-			<artifactId>google-cloud-compute</artifactId>
-			<version>1.58.0</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
-		<dependency>
-			<groupId>com.google.protobuf</groupId>
-			<artifactId>protobuf-java</artifactId>
-			<version>4.28.0</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>33.3.0-jre</version>
-		</dependency>
-	</dependencies>
-	<build>
-		<finalName>GCP-Discord</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.2.4</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<source>22</source>
-							<target>22</target>
-							<filters>
-								<filter>
-									<artifact>mysql:mysql-connector-java</artifact>
-									<includes>
-										<include>**/*</include>
-									</includes>
-								</filter>
-								<!--<filter>
-									<artifact>com.github.ucchyocean:LunaChat</artifact>
-									<excludes>
-										<exclude>**/*</exclude>
-									</excludes>
-								</filter>-->
-							</filters>
-							<relocations>
-								<!-- Optionally, relocate classes to avoid conflicts -->
-							</relocations>
-							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>common.Main</mainClass>
-								</transformer>
-							</transformers>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+<groupId>FMC-Plugin</groupId>
+<artifactId>FMC</artifactId>
+<version>1.0.0</version>
+<name>fmc-plugin</name>
+<properties>
+  <!--<java.version>1.8</java.version>POPPOOO!!!-->
+  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  <maven.compiler.source>22</maven.compiler.source>
+  <maven.compiler.target>22</maven.compiler.target>
+  <velocity.version>3.3.0</velocity.version>
+</properties>
+<dependencies>
+  <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+  <dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-classic</artifactId>
+    <version>1.5.8</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>2.1.0-alpha1</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/org.yaml/snakeyaml -->
+  <dependency>
+    <groupId>org.yaml</groupId>
+    <artifactId>snakeyaml</artifactId>
+    <version>2.0</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.google.inject/guice -->
+  <dependency>
+    <groupId>com.google.inject</groupId>
+    <artifactId>guice</artifactId>
+    <version>7.0.0</version>
+  </dependency>
+  <dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.30</version>
+    <scope>compile</scope>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/org.json/json -->
+  <dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20180813</version>
+  </dependency>
+  <dependency>
+    <groupId>net.dv8tion</groupId>
+    <artifactId>JDA</artifactId>
+    <version>5.0.0-alpha.5</version>
+  </dependency>
+  <dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp</artifactId>
+    <version>4.9.3</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.google.cloud/google-cloud-compute -->
+  <dependency>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-compute</artifactId>
+    <version>1.58.0</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
+  <dependency>
+    <groupId>com.google.protobuf</groupId>
+    <artifactId>protobuf-java</artifactId>
+    <version>4.28.0</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+  <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>33.3.0-jre</version>
+  </dependency>
+</dependencies>
+<build>
+  <finalName>GCP-Discord</finalName>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.2.4</version>
+      <executions>
+        <execution>
+          <phase>package</phase>
+          <goals>
+            <goal>shade</goal>
+          </goals>
+          <configuration>
+            <source>22</source>
+            <target>22</target>
+            <filters>
+              <filter>
+                <artifact>mysql:mysql-connector-java</artifact>
+                <includes>
+                  <include>**/*</include>
+                </includes>
+              </filter>
+              <!--<filter>
+                <artifact>com.github.ucchyocean:LunaChat</artifact>
+                <excludes>
+                <exclude>**/*</exclude>
+                </excludes>
+              </filter>-->
+            </filters>
+            <relocations>
+              <!-- Optionally, relocate classes to avoid conflicts -->
+            </relocations>
+            <transformers>
+              <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <mainClass>common.Main</mainClass>
+              </transformer>
+            </transformers>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
 </project>

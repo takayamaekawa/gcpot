@@ -1,42 +1,42 @@
 # Configuration for GCP/Discord
 Common:
-    WebHost: ""
+  WebHost: ""
 
 GCP:
-    Mode: false
-    ServiceAccountKeyPath: ""
-    ProjectId: ""
-    Zone: ""
-    InstanceName: ""
-    WebHost: ""
-    Status:
-        Period: 
+  Mode: false
+  ServiceAccountKeyPath: ""
+  ProjectId: ""
+  Zone: ""
+  InstanceName: ""
+  WebHost: ""
+  Status:
+    Period: 
 
 NonGCP: 
-    LocalIP: "localhost"
-    Status:
-        Period: 
+  LocalIP: "localhost"
+  Status:
+    Period: 
 
 Discord:
-    Token: ""
-    GCPChannelId: 
-    Command:
-        Period: 
-    Presence:
-        Activity:
-            Default: ""
-            Running: ""
-            Freezing: ""
-            Stopping: ""
-    GCPRoleId: 
-    Status:
-        Period: 
-        ChannelId: 
-        MessageId: 
+  Token: ""
+  GCPChannelId: 
+  Command:
+    Period: 
+  Presence:
+    Activity:
+      Default: ""
+      Running: ""
+      Freezing: ""
+      Stopping: ""
+  GCPRoleId: 
+  Status:
+    Period: 
+    ChannelId: 
+    MessageId: 
 
 MySQL:
-    Host: ""
-    Database: ""
-    Port: 
-    User: ""
-    Password: ""
+  Host: ""
+  Database: ""
+  Port: 
+  User: ""
+  Password: ""
