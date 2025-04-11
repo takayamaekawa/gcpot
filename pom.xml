@@ -2,15 +2,15 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 <modelVersion>4.0.0</modelVersion>
-<groupId>FMC-Plugin</groupId>
-<artifactId>FMC</artifactId>
+<groupId>com.github.verazza.gcpot</groupId>
+<artifactId>gcpot</artifactId>
 <version>1.0.0</version>
-<name>fmc-plugin</name>
+<name>gcpot</name>
 <properties>
-  <!--<java.version>1.8</java.version>POPPOOO!!!-->
+  <!--<java.version>1.8</java.version>-->
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  <maven.compiler.source>22</maven.compiler.source>
-  <maven.compiler.target>22</maven.compiler.target>
+  <maven.compiler.source>21</maven.compiler.source>
+  <maven.compiler.target>21</maven.compiler.target>
   <velocity.version>3.3.0</velocity.version>
 </properties>
 <dependencies>
@@ -93,8 +93,8 @@
             <goal>shade</goal>
           </goals>
           <configuration>
-            <source>22</source>
-            <target>22</target>
+            <source>21</source>
+            <target>21</target>
             <filters>
               <filter>
                 <artifact>mysql:mysql-connector-java</artifact>
