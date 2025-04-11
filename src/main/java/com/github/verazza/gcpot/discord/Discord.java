@@ -1,4 +1,4 @@
-package discord;
+package com.github.verazza.gcpot.discord;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import common.Config;
-import common.Main;
+import com.github.verazza.gcpot.common.Config;
+import com.github.verazza.gcpot.common.Main;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;

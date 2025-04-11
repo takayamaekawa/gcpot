@@ -1,4 +1,4 @@
-package common;
+package com.github.verazza.gcpot.common;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,10 +13,10 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-import discord.Discord;
-import discord.LoopReflect;
-import gcp.InstanceManager;
-import gcp.LoopStatus;
+import com.github.verazza.gcpot.discord.Discord;
+import com.github.verazza.gcpot.discord.LoopReflect;
+import com.github.verazza.gcpot.gcp.InstanceManager;
+import com.github.verazza.gcpot.gcp.LoopStatus;
 
 public class Main {
   private static Injector injector = null;
@@ -31,7 +31,7 @@ public class Main {
       return;
     }
 
-    injector = Guice.createInjector(new common.Module(logger, dataDirectory));
+    injector = Guice.createInjector(new com.github.verazza.gcpot.common.Module(logger, dataDirectory));
 
     if (injector.getInstance(InstanceManager.class).getCredentials() == null) {
       return;

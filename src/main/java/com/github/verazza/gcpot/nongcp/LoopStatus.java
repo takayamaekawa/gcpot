@@ -1,4 +1,4 @@
-package nongcp;
+package com.github.verazza.gcpot.nongcp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import common.Config;
-import discord.Discord;
+import com.github.verazza.gcpot.common.Config;
+import com.github.verazza.gcpot.discord.Discord;
 import net.dv8tion.jda.api.entities.Activity;
 
 public class LoopStatus {
@@ -22,13 +22,13 @@ public class LoopStatus {
   public static AtomicBoolean isFreezing = new AtomicBoolean(false);
   private final Logger logger;
   private final Config config;
-  private final nongcp.InstanceManager nongcp;
+  private final InstanceManager nongcp;
   private final Discord discord;
   private final int period;
   private final CompletableFuture<Void> firstLoopCompleted = new CompletableFuture<>(); // 初回ループ完了を監視
 
   @Inject
-  public LoopStatus(Logger logger, Config config, nongcp.InstanceManager nongcp, Discord discord) {
+  public LoopStatus(Logger logger, Config config, InstanceManager nongcp, Discord discord) {
     this.logger = logger;
     this.config = config;
     this.nongcp = nongcp;

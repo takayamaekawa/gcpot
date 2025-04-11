@@ -1,4 +1,4 @@
-package discord;
+package com.github.verazza.gcpot.discord;
 
 import java.awt.Color;
 import java.sql.Connection;
@@ -15,10 +15,10 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import common.Config;
-import gcp.InstanceManager;
-import gcp.LoopStatus;
-import mysql.Database;
+import com.github.verazza.gcpot.common.Config;
+import com.github.verazza.gcpot.gcp.InstanceManager;
+import com.github.verazza.gcpot.gcp.LoopStatus;
+import com.github.verazza.gcpot.mysql.Database;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;

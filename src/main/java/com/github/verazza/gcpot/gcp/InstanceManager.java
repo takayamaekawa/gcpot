@@ -1,4 +1,4 @@
-package gcp;
+package com.github.verazza.gcpot.gcp;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
 import com.google.inject.Inject;
 
-import common.Config;
+import com.github.verazza.gcpot.common.Config;
 
 public class InstanceManager {
   private final Logger logger;

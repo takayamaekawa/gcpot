@@ -1,4 +1,4 @@
-package common;
+package com.github.verazza.gcpot.common;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -7,12 +7,12 @@ import org.slf4j.Logger;
 
 import com.google.inject.AbstractModule;
 
-import discord.Discord;
-import discord.DiscordEventListener;
-import discord.DiscordInterface;
-import discord.LoopReflect;
-import mysql.Database;
-import mysql.DatabaseInterface;
+import com.github.verazza.gcpot.discord.Discord;
+import com.github.verazza.gcpot.discord.DiscordEventListener;
+import com.github.verazza.gcpot.discord.DiscordInterface;
+import com.github.verazza.gcpot.discord.LoopReflect;
+import com.github.verazza.gcpot.mysql.Database;
+import com.github.verazza.gcpot.mysql.DatabaseInterface;
 
 public class Module extends AbstractModule {
   private final Logger logger;
@@ -37,9 +37,9 @@ public class Module extends AbstractModule {
     bind(DiscordInterface.class).to(Discord.class);
     bind(DiscordEventListener.class);
     bind(LoopReflect.class);
-    bind(gcp.InstanceManager.class);
-    bind(gcp.LoopStatus.class);
-    bind(nongcp.InstanceManager.class);
-    bind(nongcp.LoopStatus.class);
+    bind(com.github.verazza.gcpot.gcp.InstanceManager.class);
+    bind(com.github.verazza.gcpot.gcp.LoopStatus.class);
+    bind(com.github.verazza.gcpot.nongcp.InstanceManager.class);
+    bind(com.github.verazza.gcpot.nongcp.LoopStatus.class);
   }
 }

@@ -1,4 +1,4 @@
-package nongcp;
+package com.github.verazza.gcpot.nongcp;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import common.Config;
+import com.github.verazza.gcpot.common.Config;
 
 public class InstanceManager {
   private final String webHost;
