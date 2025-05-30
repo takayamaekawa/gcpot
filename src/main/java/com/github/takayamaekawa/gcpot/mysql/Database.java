@@ -1,4 +1,4 @@
-package com.github.verazza.gcpot.mysql;
+package com.github.takayamaekawa.gcpot.mysql;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import com.github.verazza.gcpot.common.Config;
+import com.github.takayamaekawa.gcpot.common.Config;
 
 public class Database implements DatabaseInterface {
   private final Config config;

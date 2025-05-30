@@ -1,4 +1,4 @@
-package com.github.verazza.gcpot.gcp;
+package com.github.takayamaekawa.gcpot.gcp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 
-import com.github.verazza.gcpot.common.Config;
-import com.github.verazza.gcpot.discord.Discord;
+import com.github.takayamaekawa.gcpot.common.Config;
+import com.github.takayamaekawa.gcpot.discord.Discord;
 import net.dv8tion.jda.api.entities.Activity;
 
 public class LoopStatus {

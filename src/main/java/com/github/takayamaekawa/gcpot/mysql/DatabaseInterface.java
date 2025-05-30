@@ -1,4 +1,4 @@
-package com.github.verazza.gcpot.mysql;
+package com.github.takayamaekawa.gcpot.mysql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

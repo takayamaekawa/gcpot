@@ -1,4 +1,4 @@
-package com.github.verazza.gcpot.discord;
+package com.github.takayamaekawa.gcpot.discord;
 
 import java.util.concurrent.CompletableFuture;
 

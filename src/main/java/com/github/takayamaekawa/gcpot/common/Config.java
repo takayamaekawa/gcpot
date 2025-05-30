@@ -1,4 +1,4 @@
-package com.github.verazza.gcpot.common;
+package com.github.takayamaekawa.gcpot.common;
 
 import java.io.FileWriter;
 import java.io.IOException;
